@@ -1,5 +1,7 @@
-# نادیده گرفتن پوشه node_modules
+# Dependency directories
 node_modules/
+jspm_packages/
+
 
 # نادیده گرفتن فایل‌های موقت
 *.log
