@@ -1,0 +1,6 @@
+# نادیده گرفتن پوشه node_modules
+node_modules/
+
+# نادیده گرفتن فایل‌های موقت
+*.log
+.DS_Store
