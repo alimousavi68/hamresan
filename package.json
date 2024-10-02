@@ -4,12 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build-css": "tailwind -i assets/src/style.css -o assets/css/styles.css"
+    "build-css": "npx tailwind -i assets/src/style.css -o assets/css/styles.css --watch"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "daisyui": "^4.12.10",
     "tailwindcss": "^3.4.13"
   }
 }

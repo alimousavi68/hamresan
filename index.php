@@ -18,3 +18,5 @@ include_once HAM_PLUGIN_DIR_PATH . 'inc/helper_functions.php';
 
 include_once HAM_PLUGIN_DIR_PATH . 'pages/reports.php';
 include_once HAM_PLUGIN_DIR_PATH . 'pages/settings.php';
+
+?>
