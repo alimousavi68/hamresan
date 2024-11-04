@@ -1,5 +1,4 @@
 <?php
-
 // create post type i8_child_sites
 function create_post_type_i8_child_sites()
 {
@@ -75,37 +74,58 @@ function display_hrm_setting_metabox_callback($post)
     $i8_hrm_thumbnail_fetch = get_post_meta($post_id, 'i8_hrm_thumbnail_fetch', true) ? get_post_meta($post_id, 'i8_hrm_thumbnail_fetch', true) : '';
     $i8_hrm_tags_fetch = get_post_meta($post_id, 'i8_hrm_tags_fetch', true) ? get_post_meta($post_id, 'i8_hrm_tags_fetch', true) : '';
     $i8_hrm_taxonomy_fetch = get_post_meta($post_id, 'i8_hrm_taxonomy_fetch', true) ? get_post_meta($post_id, 'i8_hrm_taxonomy_fetch', true) : '';
+    $i8_hrm_replace_target_1 = get_post_meta($post_id, 'i8_hrm_replace_target_1', true) ? get_post_meta($post_id, 'i8_hrm_replace_target_1', true) : '';
+    $i8_hrm_replace_with_1 = get_post_meta($post_id, 'i8_hrm_replace_with_1', true) ? get_post_meta($post_id, 'i8_hrm_replace_with_1', true) : '';
+    $i8_hrm_replace_target_2 = get_post_meta($post_id, 'i8_hrm_replace_target_2', true) ? get_post_meta($post_id, 'i8_hrm_replace_target_2', true) : '';
+    $i8_hrm_replace_with_2 = get_post_meta($post_id, 'i8_hrm_replace_with_2', true) ? get_post_meta($post_id, 'i8_hrm_replace_with_2', true) : '';
     $i8_hrm_postmeta_fetch = get_post_meta($post_id, 'i8_hrm_postmeta_fetch', true) ? get_post_meta($post_id, 'i8_hrm_postmeta_fetch', true) : '';
     $i8_hrm_yoast_fetch = get_post_meta($post_id, 'i8_hrm_yoast_fetch', true) ? get_post_meta($post_id, 'i8_hrm_yoast_fetch', true) : '';
     $i8_hrm_rankmath_fetch = get_post_meta($post_id, 'i8_hrm_rankmath_fetch', true) ? get_post_meta($post_id, 'i8_hrm_rankmath_fetch', true) : '';
+
+    if ($i8_hrm_url_path != '') {
+        $response = i8_hrm_fetch_categories_return($i8_hrm_url_path, $i8_hrm_child_site_username, $i8_hrm_child_site_password);
+        if ($response['success'] == true) {
+            $child_site_categories = $response["data"];
+        } else {
+            // error_log($response["message"]);
+        }
+    }
     ?>
 
 
     <div class="flex flex-col gap-3">
+        <div id="notif-span">
+
+        </div>
 
         <!-- Child Site Url -->
         <div class="">
             <label for="i8_hrm_url_path" class="block text-gray-700 text-sm font-bold mb-2">آدرس :</label>
             <div class="flex flex-row">
-                <input type="text" name="i8_hrm_url_path" value="<?php echo $i8_hrm_url_path; ?>"
+                <input type="text" name="i8_hrm_url_path" id="i8_hrm_url_path" value="<?php echo $i8_hrm_url_path; ?>"
                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                <button type="button" name="h8_hrm_url_chk_btn" class="btn btn-rounnded btn-sm btn-outline ">تست
-                    اتصال</button>
+                <button type="button" id="i8_hrm_test_btn" name="h8_hrm_url_chk_btn"
+                    class="btn btn-rounnded btn-sm btn-outline ">
+                    <span id="i8-loading-bar" class=" loading loading-bars loading-sm hidden"></span>
+                    تست اتصال</button>
             </div>
         </div>
 
         <div class="flex md:flex-row gap-2">
             <div class="w-full md:w-1/2  ">
                 <label for="i8_hrm_child_site_username">نام کاربری</label>
-                <input type="text" name="i8_hrm_child_site_username" value="<?php echo $i8_hrm_child_site_username; ?>"
+                <input type="text" name="i8_hrm_child_site_username" id="i8_hrm_child_site_username"
+                    value="<?php echo $i8_hrm_child_site_username; ?>"
                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
             </div>
             <div class="w-full md:w-1/2 ">
                 <label for="i8_hrm_child_site_password">رمز عبور</label>
-                <input type="text" name="i8_hrm_child_site_password" value="<?php echo $i8_hrm_child_site_password; ?>"
+                <input type="text" name="i8_hrm_child_site_password" id="i8_hrm_child_site_password"
+                    value="<?php echo $i8_hrm_child_site_password; ?>"
                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
             </div>
         </div>
+
 
         <!-- publish delay -->
         <div class="w-full">
@@ -127,6 +147,54 @@ function display_hrm_setting_metabox_callback($post)
             </select>
 
         </div>
+        <!-- جایگزینی -->
+        <div class="flex w-full flex-col">
+            <div class="divider divider-secondary label-text text-right  text-sm text-slate-800 ">جایگزینی :</div>
+            <div class="div items-center justify-center w-full">
+
+                <!-- items -->
+                <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
+
+                    <div class="flex flex-col w-1/3 sm:w-full">
+                        <label>کلیدواژه هدف :</label>
+                        <input type="text" class="input" name="i8_hrm_replace_target_1"
+                            value="<?php echo (esc_attr(isset($i8_hrm_replace_target_1) ? $i8_hrm_replace_target_1 : '')); ?>" id="">
+                    </div>
+
+                    <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/arrow-left.svg'; ?>" width="32" height="32"
+                        alt="">
+
+                    <div class="flex flex-col w-1/3 sm:w-full">
+                        <label for="">جایگزینی با :</label>
+                        <input type="text" class="input" name="i8_hrm_replace_with_1"
+                            value="<?php echo (esc_attr(isset($i8_hrm_replace_with_1) ? $i8_hrm_replace_with_1 : '')); ?>" id="">
+                    </div>
+
+                </div>
+                <!-- items 2 -->
+                <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
+
+                    <div class="flex flex-col w-1/3 sm:w-full">
+                        <label>کلیدواژه هدف :</label>
+                        <input type="text" class="input" name="i8_hrm_replace_target_2"
+                            value="<?php echo (esc_attr(isset($i8_hrm_replace_target_2) ? $i8_hrm_replace_target_2 : '')); ?>"
+                            id="">
+                    </div>
+
+                    <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/arrow-left.svg'; ?>" width="32" height="32"
+                        alt="">
+
+                    <div class="flex flex-col w-1/3 sm:w-full">
+                        <label for="">جایگزینی با :</label>
+                        <input type="text" class="input" name="i8_hrm_replace_with_2"
+                            value="<?php echo (esc_attr(isset($i8_hrm_replace_with_2) ? $i8_hrm_replace_with_2 : '')); ?>"
+                            id="">
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
         <!-- واکشی -->
         <div class="flex w-full flex-col">
 
@@ -194,35 +262,237 @@ function display_hrm_setting_metabox_callback($post)
         <!-- دسته ها -->
         <div class="flex w-full flex-col">
 
-            <div class="divider divider-secondary label-text text-right  text-sm text-slate-800 ">دسته ها : </div>
-
-            <!-- fetch items -->
-            <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
-
-                <div class="flex flex-col w-1/3 sm:w-full">
-                    <label>دسته بندی در مقصد</label>
-                    <option name="i8_hrm_taxonomy_" value="1" class="input input-bordered " disabled >سیاسی</option>
-                </div>
-
-                <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/link.svg' ?>" width="32" height="32" alt="">
-
-                <div class="flex flex-col w-1/3 sm:w-full">
-                    <label for="">دسته بندی در مبدا</label>
-                    <select name="i8_hrm_primary_taxonomy_source[]" class="select select-bordered">
-                        <option value="" class="">سیاست</option>
-                    </select>
-                </div>
+            <div class="divider divider-secondary label-text text-right  text-sm text-slate-800 ">دسته ها :
+                <button class="btn btn-sm" name="" id="fetch_categories">
+                    <span id="i8-loading-bar-2" class="loading loading-spinner loading-sm hidden"></span>
+                    واکشی
+                </button>
 
             </div>
+            <div id="notif-span-2">
 
+            </div>
+            <div id="categories-frame">
+                <?php
+                $my_categories = get_categories(array('taxonomy' => 'category', 'hide_empty' => false));
+                $categories = get_post_meta($post_id, 'category_relationships', true);
+                if ($categories) {
+                    foreach ($categories as $index => $category) {
+                        ?>
+                        <!-- fetch items -->
+                        <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
 
+                            <div class="flex flex-col w-1/3 sm:w-full">
+                                <label>دسته بندی در مقصد</label>
+                                <select name="category_relationships[<?php echo $index; ?>][category_child_site]"
+                                    class="select select-bordered">
+                                    <option value='<?php echo $category['category_child_site']; ?>' class='input input-bordered'
+                                        selected><?php
+                                        foreach ($child_site_categories as $child_site_category) {
+                                            if ($child_site_category["id"] == $category["category_child_site"]) {
+                                                echo $child_site_category["name"];
+                                            }
+                                        }
+                                        ?>
+                                    </option>
+                                </select>
+                            </div>
 
+                            <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/link.svg'; ?>" width="32" height="32" alt="">
+
+                            <div class="flex flex-col w-1/3 sm:w-full">
+                                <label for="">دسته بندی در مبدا</label>
+                                <select name="category_relationships[<?php echo $index; ?>][category_server_site]"
+                                    class="select select-bordered">
+                                    <option value=""></option>
+                                    <?php
+                                    foreach ($my_categories as $my_category) {
+                                        $selected = ($my_category->term_id == $category['category_server_site']) ? ' selected ' : '';
+                                        echo '<option value="' . $my_category->term_id . '" class="input input-bordered"' . $selected . '>' . $my_category->name . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+
+                        </div>
+                        <?php
+                    }
+                }
+                ?>
+            </div>
 
 
         </div>
 
     </div>
 
+    <!-- test button scripts -->
+
+    <script>
+        jQuery(document).ready(function ($) {
+            $('#i8_hrm_test_btn').click(function (e) {
+                e.preventDefault();
+                $("#i8-loading-bar").removeClass("hidden");
+
+                //fetch data
+                var i8_hrm_url_path = $('#i8_hrm_url_path').val();
+                var i8_hrm_child_site_username = $('#i8_hrm_child_site_username').val();
+                var i8_hrm_child_site_password = $('#i8_hrm_child_site_password').val();
+                var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+
+                // Send an AJAX request
+                $.ajax({
+                    type: 'POST',
+                    url: ajaxurl,
+                    data: {
+                        'action': 'i8_hrm_test_connection',
+                        'i8_hrm_url_path': i8_hrm_url_path,
+                        'i8_hrm_child_site_username': i8_hrm_child_site_username,
+                        'i8_hrm_child_site_password': i8_hrm_child_site_password,
+                    },
+                    success: function (response) {
+                        // console.log('exp: ' + response);
+                        if (response == 'true') {
+                            $('#notif-span').append('<div role="alert" class="alert alert-success"> <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/link.svg' ?>" width="32" height="32" alt=""><span>متصل شد!</span></div>');
+                        } else {
+                            $('#notif-span').append('<div role="alert" class="alert alert-error"><span>اطلاعات وارد شده صحیح نیست</span></div>');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        if (xhr.status === 404) {
+                            $('#notif-span').append('<div role="alert" class="alert alert-error"><span>خطا: URL پیدا نشد.</span></div>');
+                        } else if (xhr.status === 500) {
+                            $('#notif-span').append('<div role="alert" class="alert alert-error"><span>خطا: مشکل داخلی سرور.</span></div>');
+                        } else {
+                            $('#notif-span').append('<div role="alert" class="alert alert-error"><span>خطا: ' + xhr.status + ' ' + xhr.statusText + '</span></div>');
+                        }
+                    }
+                }).always(function () {
+                    $("#i8-loading-bar").addClass("hidden");
+                    setTimeout(function () { $(".alert").remove(); }, 7000);
+                });
+            });
+        });
+    </script>
+
+    <script>
+        jQuery(document).ready(function ($) {
+            $('#fetch_categories').click(function (e) {
+                e.preventDefault();
+                $("#i8-loading-bar-2").removeClass("hidden");
+
+                var i8_hrm_url_path = $('#i8_hrm_url_path').val();
+                var i8_hrm_child_site_username = $('#i8_hrm_child_site_username').val();
+                var i8_hrm_child_site_password = $('#i8_hrm_child_site_password').val();
+                var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+
+                $.ajax({
+                    type: 'POST',
+                    url: ajaxurl,
+                    data: {
+                        'action': 'i8_hrm_fetch_categories',
+                        'i8_hrm_url_path': i8_hrm_url_path,
+                        'i8_hrm_child_site_username': i8_hrm_child_site_username,
+                        'i8_hrm_child_site_password': i8_hrm_child_site_password,
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            var categories = response.data;
+                            var myCategories = response.myCategories;
+
+                            // برای هر دسته‌بندی جدید
+                            $.each(categories, function (index, category) {
+                                // چک کردن وجود دسته‌بندی با این ID
+                                var existingSelect = $(`select[name^="category_relationships"][name$="[category_child_site]"] option[value="${category.id}"]`).length;
+
+                                // اگر این دسته‌بندی قبلاً وجود نداشت، اضافه‌اش کن
+                                if (!existingSelect) {
+                                    var categoryDiv = `
+                                                                <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
+                                                                    <div class="flex flex-col w-1/3 sm:w-full">
+                                                                        <label>دسته بندی در مقصد</label>
+                                                                        <select name="category_relationships[${index}][category_child_site]" class="select select-bordered">
+                                                                            <option value='${category.id}' class='input input-bordered' selected>${category.name}</option>
+                                                                        </select>
+                                                                    </div>
+
+                                                                    <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/link.svg'; ?>" width="32" height="32" alt="">
+
+                                                                    <div class="flex flex-col w-1/3 sm:w-full">
+                                                                        <label for="">دسته بندی در مبدا</label>
+                                                                        <select name="category_relationships[${index}][category_server_site]" class="select select-bordered">
+                                                                            <option value=""></option>
+                                                                            ${myCategories.map(myCategory => `<option value='${myCategory.term_id}' class=''>${myCategory.cat_name}</option>`).join('')}
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            `;
+                                    $('#categories-frame').append(categoryDiv);
+                                }
+                            });
+                            $('#notif-span-2').append('<div class="toast toast-end"><div class="alert alert-success"><span>با موفقیت واکشی شد!</span></div></div>');
+
+                        } else {
+                            $('#notif-span-2').append('<div class="toast toast-end"><div class="alert alert-danger"><span>مشکلی پیش آمد!</span></div></div>');
+                            console.log(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        if (xhr.status === 404) {
+                            $('#notif-span-2').append('<div class="toast toast-end"><div class="alert alert-danger"><span>خطا: URL پیدا نشد.</span></div></div>');
+                        } else if (xhr.status === 500) {
+                            $('#notif-span-2').append('<div class="toast toast-end"><div class="alert alert-danger"><span>خطا: مشکل داخلی سرور.</span></div></div>');
+                        } else {
+                            $('#notif-span-2').append('<div class="toast toast-end"><div class="alert alert-danger"><span>خطا: ' + xhr.status + ' ' + xhr.statusText + '</span></div></div>');
+                        }
+                    }
+                }).always(function () {
+                    $("#i8-loading-bar-2").addClass("hidden");
+                    setTimeout(function () { $(".alert").remove(); }, 7000);
+                });
+            });
+        });
+    </script>
+
+
+    <script>
+        // function fetchCategories(apiUrl, jwtToken) {
+        //     return new Promise((resolve, reject) => {
+        //         $.ajax({
+        //             url: `${apiUrl}/wp-json/wp/v2/categories`,
+        //             method: 'GET',
+        //             headers: {
+        //                 'Authorization': `Bearer ${jwtToken}`
+        //             },
+        //             success: function (data) {
+        //                 // تبدیل داده‌ها به آرایه‌ای شامل نام و ای‌دی دسته‌بندی‌ها
+        //                 const categories = data.map(category => {
+        //                     return {
+        //                         id: category.id,
+        //                         name: category.name
+        //                     };
+        //                 });
+        //                 resolve(categories);
+        //             },
+        //             error: function (jqXHR, textStatus, errorThrown) {
+        //                 reject(`Error: ${textStatus}, ${errorThrown}`);
+        //             }
+        //         });
+        //     });
+        // }
+
+        //     // مثال استفاده
+        //     const apiUrl = 'https://dastyar.online'; // آدرس سایت وردپرسی
+        //     const jwtToken = 'YOUR_JWT_TOKEN'; // توکن JWT
+
+        //     fetchCategories(apiUrl, jwtToken)
+        //         .then(categories => {
+        //             console.log(categories);
+        //         })
+        //         .catch(error => {
+        //             console.error(error);
+        //         });
+    </script>
     <link rel="stylesheet" href="<?php echo HAM_PLUGIN_URL . '/assets/css/styles.css'; ?>">
 
 
@@ -238,9 +508,35 @@ function save_i8_hrm_child_site_settings_meta_box($post_id)
         return;
 
     // Save meta values
+    // check post type is post
+    $post = get_post($post_id);
+    $post_type = get_post_type($post->ID);
+    if ($post_type != 'i8_child_sites') {
+        return;
+    }
+
     // url_path
     if (isset($_POST['i8_hrm_url_path'])) {
         update_post_meta($post_id, 'i8_hrm_url_path', sanitize_text_field($_POST['i8_hrm_url_path']));
+    }
+
+    // replace target 1
+    if (isset($_POST['i8_hrm_replace_target_1'])) {
+        update_post_meta($post_id, 'i8_hrm_replace_target_1', $_POST['i8_hrm_replace_target_1']);
+    }
+    // replace with 1
+    if (isset($_POST['i8_hrm_replace_with_1'])) {
+        update_post_meta($post_id, 'i8_hrm_replace_with_1', $_POST['i8_hrm_replace_with_1']);
+    }
+
+    // replace target 2
+    if (isset($_POST['i8_hrm_replace_target_2'])) {
+        update_post_meta($post_id, 'i8_hrm_replace_target_2', ($_POST['i8_hrm_replace_target_2']));
+    }
+
+    // replace with 2
+    if (isset($_POST['i8_hrm_replace_with_2'])) {
+        update_post_meta($post_id, 'i8_hrm_replace_with_2', ($_POST['i8_hrm_replace_with_2']));
     }
 
     // username
@@ -318,6 +614,27 @@ function save_i8_hrm_child_site_settings_meta_box($post_id)
     } else {
         update_post_meta($post_id, 'i8_hrm_rankmath_fetch', 'off');
     }
+
+    // realationship category
+    $relations = isset($_POST['category_relationships']) ? $_POST['category_relationships'] : [];
+
+    /**
+     * OutPut Sample :
+     * $category_child_site = [
+     * ['category_child_site' => 1, 'category_server_site' => 2],
+     * ['category_child_site' => 3, 'category_server_site' => null], // ارتباطی وجود ندارد
+     * ];
+     */
+
+    // فیلتر کردن و ذخیره‌سازی داده‌ها
+    // حذف داده‌های خالی
+    $cleaned_relations = array_filter($relations, function ($relation) {
+        return !empty($relation['category_child_site']) && !empty($relation['category_server_site']);
+    });
+
+    update_post_meta($post_id, 'category_relationships', $cleaned_relations);
+
 }
 add_action('save_post', 'save_i8_hrm_child_site_settings_meta_box');
+
 
