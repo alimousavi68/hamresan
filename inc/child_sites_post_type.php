@@ -26,7 +26,17 @@ function create_post_type_i8_child_sites()
             'exclude_from_search' => true, // عدم نمایش در جستجو
             'publicly_queryable' => false, // عدم نمایش در جستجو
             'show_in_rest' => false,
-            'map_meta_cap' => true, // استفاده از قابلیت‌های سفارشی
+            'capability_type' => 'i8_child_sites',
+            'capabilities' => array(
+                'edit_post' => 'edit_i8_child_sites',
+                'read_post' => 'read_i8_child_sites',
+                'delete_post' => 'delete_i8_child_sites',
+                'edit_posts' => 'edit_i8_child_sitess',
+                'edit_others_posts' => 'edit_others_i8_child_sitess',
+                'publish_posts' => 'publish_i8_child_sitess',
+                'read_private_posts' => 'read_private_i8_child_sitess',
+            ),
+            'map_meta_cap' => true,
         )
     );
 }
@@ -40,13 +50,13 @@ function add_custom_capabilities()
     $role = get_role('administrator');
 
     // اضافه کردن قابلیت‌ها به نقش مدیر کل
-    $role->add_cap('edit_child_site');
-    $role->add_cap('read_child_site');
-    $role->add_cap('delete_child_sites');
-    $role->add_cap('edit_child_sites');
-    $role->add_cap('edit_others_child_sites');
-    $role->add_cap('publish_child_site');
-    $role->add_cap('read_private_books');
+    $role->add_cap('edit_i8_child_sites');
+    $role->add_cap('read_i8_child_sites');
+    $role->add_cap('delete_i8_child_sites');
+    $role->add_cap('edit_i8_child_sitess');
+    $role->add_cap('edit_others_i8_child_sitess');
+    $role->add_cap('publish_i8_child_sitess');
+    $role->add_cap('read_private_i8_child_sitess');
 }
 // افزودن اکشن برای اضافه کردن قابلیت‌ها
 add_action('admin_init', 'add_custom_capabilities');
@@ -158,7 +168,8 @@ function display_hrm_setting_metabox_callback($post)
                     <div class="flex flex-col w-1/3 sm:w-full">
                         <label>کلیدواژه هدف :</label>
                         <input type="text" class="input" name="i8_hrm_replace_target_1"
-                            value="<?php echo (esc_attr(isset($i8_hrm_replace_target_1) ? $i8_hrm_replace_target_1 : '')); ?>" id="">
+                            value="<?php echo (esc_attr(isset($i8_hrm_replace_target_1) ? $i8_hrm_replace_target_1 : '')); ?>"
+                            id="">
                     </div>
 
                     <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/arrow-left.svg'; ?>" width="32" height="32"
@@ -167,7 +178,8 @@ function display_hrm_setting_metabox_callback($post)
                     <div class="flex flex-col w-1/3 sm:w-full">
                         <label for="">جایگزینی با :</label>
                         <input type="text" class="input" name="i8_hrm_replace_with_1"
-                            value="<?php echo (esc_attr(isset($i8_hrm_replace_with_1) ? $i8_hrm_replace_with_1 : '')); ?>" id="">
+                            value="<?php echo (esc_attr(isset($i8_hrm_replace_with_1) ? $i8_hrm_replace_with_1 : '')); ?>"
+                            id="">
                     </div>
 
                 </div>
@@ -408,25 +420,25 @@ function display_hrm_setting_metabox_callback($post)
                                 // اگر این دسته‌بندی قبلاً وجود نداشت، اضافه‌اش کن
                                 if (!existingSelect) {
                                     var categoryDiv = `
-                                                                <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
-                                                                    <div class="flex flex-col w-1/3 sm:w-full">
-                                                                        <label>دسته بندی در مقصد</label>
-                                                                        <select name="category_relationships[${index}][category_child_site]" class="select select-bordered">
-                                                                            <option value='${category.id}' class='input input-bordered' selected>${category.name}</option>
-                                                                        </select>
-                                                                    </div>
+                                                                    <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
+                                                                        <div class="flex flex-col w-1/3 sm:w-full">
+                                                                            <label>دسته بندی در مقصد</label>
+                                                                            <select name="category_relationships[${index}][category_child_site]" class="select select-bordered">
+                                                                                <option value='${category.id}' class='input input-bordered' selected>${category.name}</option>
+                                                                            </select>
+                                                                        </div>
 
-                                                                    <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/link.svg'; ?>" width="32" height="32" alt="">
+                                                                        <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/link.svg'; ?>" width="32" height="32" alt="">
 
-                                                                    <div class="flex flex-col w-1/3 sm:w-full">
-                                                                        <label for="">دسته بندی در مبدا</label>
-                                                                        <select name="category_relationships[${index}][category_server_site]" class="select select-bordered">
-                                                                            <option value=""></option>
-                                                                            ${myCategories.map(myCategory => `<option value='${myCategory.term_id}' class=''>${myCategory.cat_name}</option>`).join('')}
-                                                                        </select>
+                                                                        <div class="flex flex-col w-1/3 sm:w-full">
+                                                                            <label for="">دسته بندی در مبدا</label>
+                                                                            <select name="category_relationships[${index}][category_server_site]" class="select select-bordered">
+                                                                                <option value=""></option>
+                                                                                ${myCategories.map(myCategory => `<option value='${myCategory.term_id}' class=''>${myCategory.cat_name}</option>`).join('')}
+                                                                            </select>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            `;
+                                                                `;
                                     $('#categories-frame').append(categoryDiv);
                                 }
                             });
