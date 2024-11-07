@@ -26,22 +26,21 @@ function create_post_type_i8_child_sites()
             'exclude_from_search' => true, // عدم نمایش در جستجو
             'publicly_queryable' => false, // عدم نمایش در جستجو
             'show_in_rest' => false,
-            'capability_type' => 'i8_child_sites',
+            'capability_type' => 'i8_child',
             'capabilities' => array(
-                'edit_post' => 'edit_i8_child_sites',
-                'read_post' => 'read_i8_child_sites',
-                'delete_post' => 'delete_i8_child_sites',
-                'edit_posts' => 'edit_i8_child_sitess',
-                'edit_others_posts' => 'edit_others_i8_child_sitess',
-                'publish_posts' => 'publish_i8_child_sitess',
-                'read_private_posts' => 'read_private_i8_child_sitess',
+                'edit_post' => 'edit_i8_child', // تغییر به 'edit_i8_child_site'
+                'read_post' => 'read_i8_child', // تغییر به 'read_i8_child_site'
+                'delete_post' => 'delete_i8_child', // تغییر به 'delete_i8_child_site'
+                'edit_posts' => 'edit_i8_childs', // تغییر به 'edit_i8_child_sites'
+                'edit_others_posts' => 'edit_others_i8_childs', // تغییر به 'edit_others_i8_child_sites'
+                'publish_posts' => 'publish_i8_childs', // تغییر به 'publish_i8_child_sites'
+                'read_private_posts' => 'read_private_i8_childs', // تغییر به 'read_private_i8_child_sites'
             ),
             'map_meta_cap' => true,
         )
     );
 }
 add_action('init', 'create_post_type_i8_child_sites');
-
 
 // تابعی برای اضافه کردن قابلیت‌ها به نقش‌های کاربری
 function add_custom_capabilities()
@@ -50,17 +49,18 @@ function add_custom_capabilities()
     $role = get_role('administrator');
 
     // اضافه کردن قابلیت‌ها به نقش مدیر کل
-    $role->add_cap('edit_i8_child_sites');
-    $role->add_cap('read_i8_child_sites');
-    $role->add_cap('delete_i8_child_sites');
-    $role->add_cap('edit_i8_child_sitess');
-    $role->add_cap('edit_others_i8_child_sitess');
-    $role->add_cap('publish_i8_child_sitess');
-    $role->add_cap('read_private_i8_child_sitess');
+    if ($role) {
+        $role->add_cap('edit_i8_child'); // تغییر به 'edit_i8_child_site'
+        $role->add_cap('read_i8_child'); // تغییر به 'read_i8_child_site'
+        $role->add_cap('delete_i8_child'); // تغییر به 'delete_i8_child_site'
+        $role->add_cap('edit_i8_childs'); // تغییر به 'edit_others_i8_child_sites'
+        $role->add_cap('edit_others_i8_childs'); // تغییر به 'edit_others_i8_child_sites'
+        $role->add_cap('publish_i8_childs'); // تغییر به 'publish_i8_child_sites'
+        $role->add_cap('read_private_i8_childs'); // تغییر به 'read_private_i8_child_sites'
+    }
 }
 // افزودن اکشن برای اضافه کردن قابلیت‌ها
 add_action('admin_init', 'add_custom_capabilities');
-
 
 
 // ایجاد متاباکس برای تنظیمات مقصد
