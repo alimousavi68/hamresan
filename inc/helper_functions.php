@@ -25,15 +25,17 @@ function send_new_post_to_child_sites($post_id)
 
     // ارسال پست به هر سایت فرزند
     foreach ($child_sites as $child_site) {
-
-        $post_categories = wp_get_post_terms($post_id, 'category');
-        foreach ($post_categories as $category) {
-            $i8_hrm_forbbiden_cats = get_post_meta($child_site->ID, 'i8_hrm_forbbiden_cats', true);
-            if (in_array($category->term_id, $i8_hrm_forbbiden_cats)) {
-                $is_break = true;
+        
+        $i8_hrm_forbbiden_cats = get_post_meta($child_site->ID, 'i8_hrm_forbbiden_cats', true);
+        if (isset($i8_hrm_forbbiden_cats)) {
+            $post_categories = wp_get_post_terms($post_id, 'category');
+            foreach ($post_categories as $category) {
+                if (in_array($category->term_id, $i8_hrm_forbbiden_cats)) {
+                    $is_break = true;
+                }
             }
-
         }
+
         if (isset($is_break)) {
             break;
         }
