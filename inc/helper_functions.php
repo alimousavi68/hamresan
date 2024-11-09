@@ -24,8 +24,11 @@ function send_new_post_to_child_sites($post_id)
     // ارسال پست به هر سایت فرزند
     foreach ($child_sites as $child_site) {
         $child_site_id = $child_site->ID;
-        $child_site_meta = i8_hrm_fetch_child_sites_meta($child_site_id);
+        if (i8_child_site_is_limit_post_in_day($child_site_id) == false) {
+            break;
+        }
 
+        $child_site_meta = i8_hrm_fetch_child_sites_meta($child_site_id);
         $url = $child_site_meta['i8_hrm_url_path'];
         $username = $child_site_meta['i8_hrm_child_site_username'];
         $password = $child_site_meta['i8_hrm_child_site_password'];
@@ -133,7 +136,7 @@ function i8_hrm_fetch_post_info($post, $child_site_meta, $token, $url)
         if (!isset($child_site_meta['i8_hrm_replace_target_1']) && !isset($child_site_meta['i8_hrm_replace_target_2'])) {
             $post_info['content'] = $post->post_content;
         } else {
-            $new_replaced_content = i8_hrm_remove_link_content( $new_replaced_content);
+            $new_replaced_content = i8_hrm_remove_link_content($new_replaced_content);
             $post_info['content'] = $new_replaced_content;
         }
     }
@@ -197,9 +200,9 @@ function send_rest_post_insert_request($url, $username, $password, $post_info)
         'method' => 'POST',
         'body' => json_encode($post_info),
         'headers' => array(
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $jwt_token
-            )
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $jwt_token
+        )
     ));
 
     // بررسی ارسال موفقیت آمیز بودن درخواست
@@ -220,9 +223,9 @@ function i8_hrm_send_post_to_child_sites($url, $post_info, $jwt_token)
         'method' => 'POST',
         'body' => json_encode($post_info),
         'headers' => array(
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $jwt_token
-            )
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $jwt_token
+        )
     ));
 }
 
@@ -236,9 +239,9 @@ function get_jwt_token($url, $username, $password)
             $response = wp_remote_post($url, array(
                 'method' => 'POST',
                 'body' => array(
-                        'username' => $username,
-                        'password' => $password
-                    )
+                    'username' => $username,
+                    'password' => $password
+                )
             ));
             $result_response = json_decode(wp_remote_retrieve_body($response));
         }
@@ -350,9 +353,9 @@ function i8_hrm_test_connection()
         $response = wp_remote_post($url, array(
             'method' => 'POST',
             'body' => array(
-                    'username' => $username,
-                    'password' => $password
-                )
+                'username' => $username,
+                'password' => $password
+            )
         ));
     }
 
@@ -491,9 +494,9 @@ function send_rest_post_meta_request($url, $post_id, $server_post_id, $jwt_token
             $response = wp_remote_post($meta_url, [
                 'method' => 'POST',
                 'headers' => [
-                        'Authorization' => 'Bearer ' . $jwt_token,
-                        'Content-Type' => 'application/json',
-                    ],
+                    'Authorization' => 'Bearer ' . $jwt_token,
+                    'Content-Type' => 'application/json',
+                ],
                 'body' => json_encode($post_meta), // ارسال متا داده در فرمت مناسب
             ]);
 
@@ -518,7 +521,7 @@ function i8_hrm_replace_post_content($content, $target, $replace)
 {
     $content = str_replace($target, $replace, $content);
     return $content;
-    
+
 }
 
 // remove a link contentt
@@ -541,3 +544,38 @@ function i8_hrm_remove_link_content($content)
 //     }
 // }
 // add_action('admin_enqueue_scripts', 'i8_hrm_add_tailwind_css', 100); -->
+
+
+
+function i8_child_site_is_limit_post_in_day($post_id)
+{
+    $limt_sent_post_in_day = get_post_meta($post_id, 'i8_hrm_limit_sent_post_in_day', true);
+    if ($limt_sent_post_in_day) {
+        $current_day = get_post_meta($post_id, 'i8_hrm_limit_sent_post_today', true);
+        $sent_post_today = get_post_meta($post_id, 'i8_hrm_sent_post_today', true);
+
+        if ($current_day == '') {
+            update_post_meta($post_id, 'i8_hrm_limit_sent_post_today', date('Y-m-d'));
+            update_post_meta($post_id, 'i8_hrm_sent_post_today', 0);
+            $current_day = get_post_meta($post_id, 'i8_hrm_limit_sent_post_today', true);
+            $sent_post_today = get_post_meta($post_id, 'i8_hrm_sent_post_today', true);
+        }
+
+
+        if ($current_day != date('Y-m-d')) {
+            update_post_meta($post_id, 'i8_hrm_limit_sent_post_today', date('Y-m-d'));
+            update_post_meta($post_id, 'i8_hrm_sent_post_today', 0);
+        }
+
+        if ($current_day == date('Y-m-d') && $sent_post_today <= $limt_sent_post_in_day) {
+            $sent_post_today++;
+            update_post_meta($post_id, 'i8_hrm_sent_post_today', $sent_post_today);
+            return true;
+        } else {
+            return false;
+        }
+
+    } else {
+        return true;
+    }
+}

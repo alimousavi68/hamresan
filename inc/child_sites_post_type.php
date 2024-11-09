@@ -91,6 +91,7 @@ function display_hrm_setting_metabox_callback($post)
     $i8_hrm_postmeta_fetch = get_post_meta($post_id, 'i8_hrm_postmeta_fetch', true) ? get_post_meta($post_id, 'i8_hrm_postmeta_fetch', true) : '';
     $i8_hrm_yoast_fetch = get_post_meta($post_id, 'i8_hrm_yoast_fetch', true) ? get_post_meta($post_id, 'i8_hrm_yoast_fetch', true) : '';
     $i8_hrm_rankmath_fetch = get_post_meta($post_id, 'i8_hrm_rankmath_fetch', true) ? get_post_meta($post_id, 'i8_hrm_rankmath_fetch', true) : '';
+    $i8_hrm_limit_sent_post_in_day = get_post_meta($post_id, 'i8_hrm_limit_sent_post_in_day', true) ? get_post_meta($post_id, 'i8_hrm_limit_sent_post_in_day', true) : '';
 
     if ($i8_hrm_url_path != '') {
         $response = i8_hrm_fetch_categories_return($i8_hrm_url_path, $i8_hrm_child_site_username, $i8_hrm_child_site_password);
@@ -138,11 +139,19 @@ function display_hrm_setting_metabox_callback($post)
 
 
         <!-- publish delay -->
-        <div class="w-full">
-            <label class="block text-gray-700 text-sm font-bold mb-2">تاخیر در انتشار :</label>
-            <input type="number" value="<?php echo $i8_hrm_publish_delay; ?>" name="i8_hrm_publish_delay"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-            <span class="label-text-alt tw-text-xs text-gray-400">دقیقه</span>
+        <div class="flex md:flex-row gap-2">
+            <div class="w-full md:w-1/2">
+                <label class="block text-gray-700 text-sm font-bold mb-2">تاخیر در انتشار :</label>
+                <input type="number" value="<?php echo $i8_hrm_publish_delay; ?>" name="i8_hrm_publish_delay"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+                <span class="label-text-alt tw-text-xs text-gray-400">دقیقه</span>
+            </div>
+            <div class="w-full md:w-1/2">
+                <label class="block text-gray-700 text-sm font-bold mb-2">ماکزیمم پست روزانه: </label>
+                <input type="number" value="<?php echo $i8_hrm_limit_sent_post_in_day; ?>" name="i8_hrm_limit_sent_post_in_day"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+                <span class="label-text-alt tw-text-xs text-gray-400">پست در روز</span>
+            </div>
         </div>
 
         <!-- post status -->
@@ -420,25 +429,25 @@ function display_hrm_setting_metabox_callback($post)
                                 // اگر این دسته‌بندی قبلاً وجود نداشت، اضافه‌اش کن
                                 if (!existingSelect) {
                                     var categoryDiv = `
-                                                                    <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
-                                                                        <div class="flex flex-col w-1/3 sm:w-full">
-                                                                            <label>دسته بندی در مقصد</label>
-                                                                            <select name="category_relationships[${index}][category_child_site]" class="select select-bordered">
-                                                                                <option value='${category.id}' class='input input-bordered' selected>${category.name}</option>
-                                                                            </select>
-                                                                        </div>
+                                                                        <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
+                                                                            <div class="flex flex-col w-1/3 sm:w-full">
+                                                                                <label>دسته بندی در مقصد</label>
+                                                                                <select name="category_relationships[${index}][category_child_site]" class="select select-bordered">
+                                                                                    <option value='${category.id}' class='input input-bordered' selected>${category.name}</option>
+                                                                                </select>
+                                                                            </div>
 
-                                                                        <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/link.svg'; ?>" width="32" height="32" alt="">
+                                                                            <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/link.svg'; ?>" width="32" height="32" alt="">
 
-                                                                        <div class="flex flex-col w-1/3 sm:w-full">
-                                                                            <label for="">دسته بندی در مبدا</label>
-                                                                            <select name="category_relationships[${index}][category_server_site]" class="select select-bordered">
-                                                                                <option value=""></option>
-                                                                                ${myCategories.map(myCategory => `<option value='${myCategory.term_id}' class=''>${myCategory.cat_name}</option>`).join('')}
-                                                                            </select>
+                                                                            <div class="flex flex-col w-1/3 sm:w-full">
+                                                                                <label for="">دسته بندی در مبدا</label>
+                                                                                <select name="category_relationships[${index}][category_server_site]" class="select select-bordered">
+                                                                                    <option value=""></option>
+                                                                                    ${myCategories.map(myCategory => `<option value='${myCategory.term_id}' class=''>${myCategory.cat_name}</option>`).join('')}
+                                                                                </select>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                `;
+                                                                    `;
                                     $('#categories-frame').append(categoryDiv);
                                 }
                             });
@@ -564,6 +573,11 @@ function save_i8_hrm_child_site_settings_meta_box($post_id)
     // publish_delay
     if (isset($_POST['i8_hrm_publish_delay'])) {
         update_post_meta($post_id, 'i8_hrm_publish_delay', sanitize_text_field($_POST['i8_hrm_publish_delay']));
+    }
+
+    // i8_hrm_limit_sent_post_in_day
+    if (isset($_POST['i8_hrm_limit_sent_post_in_day'])) {
+        update_post_meta($post_id, 'i8_hrm_limit_sent_post_in_day', sanitize_text_field($_POST['i8_hrm_limit_sent_post_in_day']));
     }
 
     // post_status
