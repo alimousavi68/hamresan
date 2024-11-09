@@ -25,7 +25,7 @@ function send_new_post_to_child_sites($post_id)
 
     // ارسال پست به هر سایت فرزند
     foreach ($child_sites as $child_site) {
-        
+
         $i8_hrm_forbbiden_cats = get_post_meta($child_site->ID, 'i8_hrm_forbbiden_cats', true);
         if (isset($i8_hrm_forbbiden_cats)) {
             $post_categories = wp_get_post_terms($post_id, 'category');
@@ -37,11 +37,13 @@ function send_new_post_to_child_sites($post_id)
         }
 
         if (isset($is_break)) {
+            insert_into_hrm_reports(date('Y-m-d H:i:s') ,  $post_id , $child_site->ID, 0 , 'دسته بندی این پست در لیست سایت فرزند مورد نظر محدود شده است');
             break;
         }
 
         $child_site_id = $child_site->ID;
         if (i8_child_site_is_limit_post_in_day($child_site_id) == false) {
+            insert_into_hrm_reports(date('Y-m-d H:i:s') ,  $post_id , $child_site->ID, 0 , 'حداکثر تعداد پست های ارسال شده در یک روز برای این سایت فرزند سررسیده است');
             break;
         }
 
@@ -58,6 +60,7 @@ function send_new_post_to_child_sites($post_id)
         $response_id = json_decode(wp_remote_retrieve_body($response));
         // بررسی موفقیت‌آمیز بودن درخواست
         if ($response && isset($response_id->id)) {
+            insert_into_hrm_reports(date('Y-m-d H:i:s') ,  $post_id , $child_site->ID, 1 , '');
             // اضافه کردن تمام متادیتاهای پست
             if ($child_site_meta['i8_hrm_postmeta_fetch'] == 'on') {
                 $meta_response = send_rest_post_meta_request($url, $response_id->id, $post_id, $jwt_token);
