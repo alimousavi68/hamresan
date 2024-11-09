@@ -18,11 +18,26 @@ function send_new_post_to_child_sites($post_id)
         return;
     }
 
+
+
     // دریافت سایت‌های فرزند
     $child_sites = i8_hrm_fetch_child_sites();
 
     // ارسال پست به هر سایت فرزند
     foreach ($child_sites as $child_site) {
+
+        $post_categories = wp_get_post_terms($post_id, 'category');
+        foreach ($post_categories as $category) {
+            $i8_hrm_forbbiden_cats = get_post_meta($child_site->ID, 'i8_hrm_forbbiden_cats', true);
+            if (in_array($category->term_id, $i8_hrm_forbbiden_cats)) {
+                $is_break = true;
+            }
+
+        }
+        if (isset($is_break)) {
+            break;
+        }
+
         $child_site_id = $child_site->ID;
         if (i8_child_site_is_limit_post_in_day($child_site_id) == false) {
             break;
@@ -578,4 +593,26 @@ function i8_child_site_is_limit_post_in_day($post_id)
     } else {
         return true;
     }
+}
+
+
+
+function display_categories_select($post_id)
+{
+    // واکشی تمام دسته‌بندی‌ها
+    $categories = get_categories();
+    $i8_hrm_forbbiden_cats = get_post_meta($post_id, 'i8_hrm_forbbiden_cats', true) ? get_post_meta($post_id, 'i8_hrm_forbbiden_cats', true) : '';
+    // نمایش انتخابگر دسته‌بندی‌ها
+    echo '<select id="category-select" name="i8_hrm_forbbiden_cats[]" multiple="multiple" style="width: 100%;">';
+
+    foreach ($categories as $category) {
+        $selected = '';
+        if (is_array($i8_hrm_forbbiden_cats)) {
+            $selected = in_array($category->term_id, $i8_hrm_forbbiden_cats) ? 'selected' : '';
+        }
+
+        echo '<option value="' . esc_attr($category->term_id) . '" ' . $selected . '>' . esc_html($category->name) . '</option>';
+    }
+
+    echo '</select>';
 }

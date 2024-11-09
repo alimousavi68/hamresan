@@ -148,7 +148,8 @@ function display_hrm_setting_metabox_callback($post)
             </div>
             <div class="w-full md:w-1/2">
                 <label class="block text-gray-700 text-sm font-bold mb-2">ماکزیمم پست روزانه: </label>
-                <input type="number" value="<?php echo $i8_hrm_limit_sent_post_in_day; ?>" name="i8_hrm_limit_sent_post_in_day"
+                <input type="number" value="<?php echo $i8_hrm_limit_sent_post_in_day; ?>"
+                    name="i8_hrm_limit_sent_post_in_day"
                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                 <span class="label-text-alt tw-text-xs text-gray-400">پست در روز</span>
             </div>
@@ -277,6 +278,17 @@ function display_hrm_setting_metabox_callback($post)
                     </label>
                 </div>
             </div>
+
+        </div>
+
+        <!-- دسته های غیرمجاز -->
+        <div class="flex w-full flex-col">
+
+            <div class="divider divider-secondary label-text text-right  text-sm text-slate-800 ">دسته های منع شده از ارسال
+                :</div>
+
+                <?php display_categories_select($post_id); ?>
+
 
         </div>
 
@@ -429,25 +441,25 @@ function display_hrm_setting_metabox_callback($post)
                                 // اگر این دسته‌بندی قبلاً وجود نداشت، اضافه‌اش کن
                                 if (!existingSelect) {
                                     var categoryDiv = `
-                                                                        <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
-                                                                            <div class="flex flex-col w-1/3 sm:w-full">
-                                                                                <label>دسته بندی در مقصد</label>
-                                                                                <select name="category_relationships[${index}][category_child_site]" class="select select-bordered">
-                                                                                    <option value='${category.id}' class='input input-bordered' selected>${category.name}</option>
-                                                                                </select>
-                                                                            </div>
+                                                                                <div class="flex flex-row sm:flex-sm gap-4 items-center justify-center w-full">
+                                                                                    <div class="flex flex-col w-1/3 sm:w-full">
+                                                                                        <label>دسته بندی در مقصد</label>
+                                                                                        <select name="category_relationships[${index}][category_child_site]" class="select select-bordered">
+                                                                                            <option value='${category.id}' class='input input-bordered' selected>${category.name}</option>
+                                                                                        </select>
+                                                                                    </div>
 
-                                                                            <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/link.svg'; ?>" width="32" height="32" alt="">
+                                                                                    <img src="<?php echo HAM_PLUGIN_URL . '/assets/images/link.svg'; ?>" width="32" height="32" alt="">
 
-                                                                            <div class="flex flex-col w-1/3 sm:w-full">
-                                                                                <label for="">دسته بندی در مبدا</label>
-                                                                                <select name="category_relationships[${index}][category_server_site]" class="select select-bordered">
-                                                                                    <option value=""></option>
-                                                                                    ${myCategories.map(myCategory => `<option value='${myCategory.term_id}' class=''>${myCategory.cat_name}</option>`).join('')}
-                                                                                </select>
-                                                                            </div>
-                                                                        </div>
-                                                                    `;
+                                                                                    <div class="flex flex-col w-1/3 sm:w-full">
+                                                                                        <label for="">دسته بندی در مبدا</label>
+                                                                                        <select name="category_relationships[${index}][category_server_site]" class="select select-bordered">
+                                                                                            <option value=""></option>
+                                                                                            ${myCategories.map(myCategory => `<option value='${myCategory.term_id}' class=''>${myCategory.cat_name}</option>`).join('')}
+                                                                                        </select>
+                                                                                    </div>
+                                                                                </div>
+                                                                            `;
                                     $('#categories-frame').append(categoryDiv);
                                 }
                             });
@@ -473,6 +485,8 @@ function display_hrm_setting_metabox_callback($post)
                 });
             });
         });
+
+    
     </script>
 
 
@@ -539,6 +553,11 @@ function save_i8_hrm_child_site_settings_meta_box($post_id)
     // url_path
     if (isset($_POST['i8_hrm_url_path'])) {
         update_post_meta($post_id, 'i8_hrm_url_path', sanitize_text_field($_POST['i8_hrm_url_path']));
+    }
+
+    // forbbiden cats
+    if (isset($_POST['i8_hrm_forbbiden_cats'])) {
+        update_post_meta($post_id, 'i8_hrm_forbbiden_cats', $_POST['i8_hrm_forbbiden_cats']);
     }
 
     // replace target 1
@@ -662,5 +681,8 @@ function save_i8_hrm_child_site_settings_meta_box($post_id)
 
 }
 add_action('save_post', 'save_i8_hrm_child_site_settings_meta_box');
+
+
+
 
 
