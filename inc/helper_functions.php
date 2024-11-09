@@ -27,7 +27,7 @@ function send_new_post_to_child_sites($post_id)
     foreach ($child_sites as $child_site) {
 
         $i8_hrm_forbbiden_cats = get_post_meta($child_site->ID, 'i8_hrm_forbbiden_cats', true);
-        if (isset($i8_hrm_forbbiden_cats)) {
+        if (isset($i8_hrm_forbbiden_cats) && !empty($i8_hrm_forbbiden_cats)) {
             $post_categories = wp_get_post_terms($post_id, 'category');
             foreach ($post_categories as $category) {
                 if (in_array($category->term_id, $i8_hrm_forbbiden_cats)) {
