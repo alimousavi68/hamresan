@@ -59,9 +59,9 @@ function add_custom_capabilities()
         $role->add_cap('read_private_i8_childs'); // تغییر به 'read_private_i8_child_sites'
     }
 }
+
 // افزودن اکشن برای اضافه کردن قابلیت‌ها
 add_action('admin_init', 'add_custom_capabilities');
-
 
 // ایجاد متاباکس برای تنظیمات مقصد
 add_action('add_meta_boxes', 'i8_hrm_setting_metabox');
@@ -98,7 +98,7 @@ function display_hrm_setting_metabox_callback($post)
         if ($response['success'] == true) {
             $child_site_categories = $response["data"];
         } else {
-            // error_log($response["message"]);
+             error_log($response["message"]);
         }
     }
     ?>
@@ -489,45 +489,6 @@ function display_hrm_setting_metabox_callback($post)
     
     </script>
 
-
-    <script>
-        // function fetchCategories(apiUrl, jwtToken) {
-        //     return new Promise((resolve, reject) => {
-        //         $.ajax({
-        //             url: `${apiUrl}/wp-json/wp/v2/categories`,
-        //             method: 'GET',
-        //             headers: {
-        //                 'Authorization': `Bearer ${jwtToken}`
-        //             },
-        //             success: function (data) {
-        //                 // تبدیل داده‌ها به آرایه‌ای شامل نام و ای‌دی دسته‌بندی‌ها
-        //                 const categories = data.map(category => {
-        //                     return {
-        //                         id: category.id,
-        //                         name: category.name
-        //                     };
-        //                 });
-        //                 resolve(categories);
-        //             },
-        //             error: function (jqXHR, textStatus, errorThrown) {
-        //                 reject(`Error: ${textStatus}, ${errorThrown}`);
-        //             }
-        //         });
-        //     });
-        // }
-
-        //     // مثال استفاده
-        //     const apiUrl = 'https://dastyar.online'; // آدرس سایت وردپرسی
-        //     const jwtToken = 'YOUR_JWT_TOKEN'; // توکن JWT
-
-        //     fetchCategories(apiUrl, jwtToken)
-        //         .then(categories => {
-        //             console.log(categories);
-        //         })
-        //         .catch(error => {
-        //             console.error(error);
-        //         });
-    </script>
     <link rel="stylesheet" href="<?php echo HAM_PLUGIN_URL . '/assets/css/styles.css'; ?>">
 
 
@@ -681,8 +642,3 @@ function save_i8_hrm_child_site_settings_meta_box($post_id)
 
 }
 add_action('save_post', 'save_i8_hrm_child_site_settings_meta_box');
-
-
-
-
-

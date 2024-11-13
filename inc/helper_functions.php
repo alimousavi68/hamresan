@@ -6,11 +6,20 @@ add_action('wp_ajax_nopriv_i8_hrm_test_connection', 'i8_hrm_test_connection'); /
 add_action('wp_ajax_i8_hrm_fetch_categories', 'i8_hrm_fetch_categories');
 add_action('wp_ajax_nopriv_i8_hrm_fetch_categories', 'i8_hrm_fetch_categories');
 
+add_action('wp_ajax_i8_hrm_delete_all_reports' , 'i8_hrm_delete_all_reports');
+add_action('wp_ajax_nopriv_i8_hrm_delete_all_reports', 'i8_hrm_delete_all_reports');
+
+add_action('wp_ajax_i8_hrm_get_all_reports' , 'i8_hrm_get_all_reports');
+add_action('wp_ajax_nopriv_i8_hrm_get_all_reports', 'i8_hrm_get_all_reports');
+
 
 add_action('save_post', 'send_new_post_to_child_sites', 100);
 // Send Post Post Publishe Action Function
 function send_new_post_to_child_sites($post_id)
 {
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)
+        return;
+
     // بررسی نوع و وضعیت پست
     $post = get_post($post_id);
     $post_type = get_post_type($post->ID);
@@ -18,10 +27,23 @@ function send_new_post_to_child_sites($post_id)
         return;
     }
 
-
-
-    // دریافت سایت‌های فرزند
-    $child_sites = i8_hrm_fetch_child_sites();
+    if (isset($_POST['i8_hrm_manual_setting']) && $_POST['i8_hrm_manual_setting'] == 'manual') {
+        $i8_hrm_body_fetch = $_POST['i8_hrm_child_site_for_send'];
+        $child_sites = get_posts(
+            array(
+                'post_type' => 'i8_child_sites',
+                'posts_per_page' => -1,
+                'post_status' => 'publish',
+                'include' => $i8_hrm_body_fetch,
+            )
+        );
+        if (!is_array($child_sites)) {
+            array($child_sites);
+        }
+    } else {
+        // دریافت سایت‌های فرزند
+        $child_sites = i8_hrm_fetch_child_sites();
+    }
 
     // ارسال پست به هر سایت فرزند
     foreach ($child_sites as $child_site) {
@@ -37,13 +59,13 @@ function send_new_post_to_child_sites($post_id)
         }
 
         if (isset($is_break)) {
-            insert_into_hrm_reports(date('Y-m-d H:i:s') ,  $post_id , $child_site->ID, 0 , 'دسته بندی این پست در لیست سایت فرزند مورد نظر محدود شده است');
+            insert_into_hrm_reports(date('Y-m-d H:i:s'), $post_id, $child_site->ID, 0, 'دسته بندی این پست در لیست سایت فرزند مورد نظر محدود شده است');
             break;
         }
 
         $child_site_id = $child_site->ID;
         if (i8_child_site_is_limit_post_in_day($child_site_id) == false) {
-            insert_into_hrm_reports(date('Y-m-d H:i:s') ,  $post_id , $child_site->ID, 0 , 'حداکثر تعداد پست های ارسال شده در یک روز برای این سایت فرزند سررسیده است');
+            insert_into_hrm_reports(date('Y-m-d H:i:s'), $post_id, $child_site->ID, 0, 'حداکثر تعداد پست های ارسال شده در یک روز برای این سایت فرزند سررسیده است');
             break;
         }
 
@@ -60,7 +82,7 @@ function send_new_post_to_child_sites($post_id)
         $response_id = json_decode(wp_remote_retrieve_body($response));
         // بررسی موفقیت‌آمیز بودن درخواست
         if ($response && isset($response_id->id)) {
-            insert_into_hrm_reports(date('Y-m-d H:i:s') ,  $post_id , $child_site->ID, 1 , '');
+            insert_into_hrm_reports(date('Y-m-d H:i:s'), $post_id, $child_site->ID, 1, '');
             // اضافه کردن تمام متادیتاهای پست
             if ($child_site_meta['i8_hrm_postmeta_fetch'] == 'on') {
                 $meta_response = send_rest_post_meta_request($url, $response_id->id, $post_id, $jwt_token);
@@ -187,6 +209,7 @@ function i8_hrm_fetch_post_info($post, $child_site_meta, $token, $url)
             $post_info['tags'] = $new_tag_list;
         }
     }
+
     if ($child_site_meta['i8_hrm_publish_delay']) {
         // فرض کنید $post و $child_site_meta به درستی تعریف شده‌اند
         $publish_delay = isset($child_site_meta['i8_hrm_publish_delay']) ? $child_site_meta['i8_hrm_publish_delay'] : 0;
@@ -581,7 +604,6 @@ function i8_child_site_is_limit_post_in_day($post_id)
             $sent_post_today = get_post_meta($post_id, 'i8_hrm_sent_post_today', true);
         }
 
-
         if ($current_day != date('Y-m-d')) {
             update_post_meta($post_id, 'i8_hrm_limit_sent_post_today', date('Y-m-d'));
             update_post_meta($post_id, 'i8_hrm_sent_post_today', 0);
@@ -621,3 +643,66 @@ function display_categories_select($post_id)
 
     echo '</select>';
 }
+
+
+function add_hamresan_post_metabbox()
+{
+    add_meta_box('i8_hrm_metabox', 'همرسان', 'i8_hrm_render_hamresan_metabox', 'post', 'side', 'high');
+}
+function i8_hrm_render_hamresan_metabox($post)
+{
+    ?>
+    <div class="">
+        <div>ارسال به : </div>
+        <div class="widefat">
+            <label>
+                <input type="radio" name="i8_hrm_manual_setting" id="i8_hrm_manual_setting" value="auto" checked
+                    onchange="toggleSelect()">
+                پیش‌فرض
+            </label>
+            <label>
+                <input type="radio" name="i8_hrm_manual_setting" id="i8_hrm_manual_setting" value="manual"
+                    onchange="toggleSelect()">
+                دستی
+            </label>
+            <br>
+        </div>
+        <div class="widefat">
+            <select name="i8_hrm_child_site_for_send" id="i8_hrm_child_site_for_send" class="widefat" multiple>
+                <?php
+                $child_site = get_posts(array(
+                    'post_type' => 'i8_child_sites',
+                    'posts_per_page' => -1,
+                    'post_status' => 'publish'
+                ));
+                foreach ($child_site as $child): ?>
+                    <option value="<?php echo $child->ID; ?>" selected><?php echo $child->post_title; ?></option>
+                    <?php
+                endforeach;
+                ?>
+            </select>
+        </div>
+    </div>
+    <script>
+        function toggleSelect() {
+            const autoRadio = document.getElementById('i8_hrm_manual_setting');
+            const selectElement = document.getElementById('i8_hrm_child_site_for_send');
+
+            // بررسی وضعیت رادیو باتن‌ها و تنظیم وضعیت select
+            if (autoRadio.checked) {
+                // اگر حالت پیش‌فرض انتخاب شده باشد
+                selectElement.disabled = true; // غیرفعال کردن select
+                selectElement.classList.add('disabled'); // اضافه کردن کلاس غیرفعال (اختیاری)
+            } else {
+                // اگر حالت دستی انتخاب شده باشد
+                selectElement.disabled = false; // فعال کردن select
+                selectElement.classList.remove('disabled'); // حذف کلاس غیرفعال (اختیاری)
+            }
+        }
+
+        // در ابتدا وضعیت را تنظیم می‌کنیم
+        toggleSelect();
+    </script>
+    <?php
+}
+add_action('add_meta_boxes', 'add_hamresan_post_metabbox');

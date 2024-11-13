@@ -35,7 +35,7 @@ function get_all_reports() {
     $table_name = $wpdb->prefix . 'hrm_reports';
 
     // اجرای کوئری برای دریافت تمام رکوردها
-    $results = $wpdb->get_results("SELECT * FROM $table_name ORDER BY send_date ", ARRAY_A);
+    $results = $wpdb->get_results("SELECT * FROM $table_name ORDER BY `send_date` DESC", ARRAY_A);
 
     // بررسی اینکه آیا رکوردی وجود دارد یا خیر
     if (!empty($results)) {
@@ -72,6 +72,14 @@ function insert_into_hrm_reports($send_date, $send_post_id, $send_target_child_s
     // } else {
     //     return new WP_Error('insert_failed', 'درج رکورد با خطا مواجه شد.');
     // }
+}
+
+//delete all reports
+function i8_hrm_delete_all_reports() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'hrm_reports';
+    $wpdb->query("DELETE FROM $table_name");
+    return true;
 }
 
 
