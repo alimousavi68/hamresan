@@ -336,7 +336,7 @@ function manage_tags($jwt_token, $tags_list, $wp_api_url)
                 $created_tag = json_decode(wp_remote_retrieve_body($create_response), true);
                 $tag_ids[] = $created_tag['id'];
             } else {
-                error_log('Error creating tag: ' . $tag);
+                error_log('Error creating tag: ' . $tag->name);
             }
         }
     }
@@ -384,7 +384,6 @@ function i8_hrm_convert_category($categories, $category_relationships)
     }
     return $cat_list;
 }
-
 
 function i8_hrm_test_connection()
 {
