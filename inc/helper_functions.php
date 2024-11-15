@@ -14,6 +14,7 @@ add_action('wp_ajax_nopriv_i8_hrm_get_all_reports', 'i8_hrm_get_all_reports');
 
 
 add_action('save_post', 'send_new_post_to_child_sites', 100);
+
 // Send Post Post Publishe Action Function
 function send_new_post_to_child_sites($post_id)
 {

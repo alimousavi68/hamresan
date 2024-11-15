@@ -32,7 +32,7 @@ function render_reports_page()
                 <th>وضعیت</th>
                 <th>تاریخ ارسال</th>
                 <th>خطا</th>
-                <th>اکشن</th>
+                
             </tr>
         </thead>
         <tbody>
@@ -52,7 +52,7 @@ function render_reports_page()
                     echo '<td>' . $send_status . '</td>';
                     echo '<td>' . $report['send_date'] . '</td>';
                     echo '<td>' . $report['send_error_msg'] . '</td>';
-                    echo '<td><a href="#s">ارسال مجدد</a></td>';
+                    
                     echo '</tr>';
                 }
             }
