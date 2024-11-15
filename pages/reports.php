@@ -1,4 +1,5 @@
 <?php
+
 // تابع برای اضافه کردن منو و زیر منو
 function add_reports_menu()
 {
@@ -74,12 +75,12 @@ function render_reports_page()
                             'action': 'i8_hrm_delete_all_reports',
                         },
                         success: function (response) {
-                            console.log('ok');
+                            console.log('delete all recored done!');
                             // delete #reports-table all rows
                             $('#reports-table tbody').empty();
                         },
                         error: function (xhr, status, error) {
-                            console.log('error');
+                            console.log('delete all recored is failed!');
                         }
                     }).always(function () {
                         $("#i8-loading-bar").addClass("hidden");
@@ -88,6 +89,7 @@ function render_reports_page()
                 });
             });
         </script>
+        
         <link rel="stylesheet" href="<?php echo HAM_PLUGIN_URL . '/assets/css/styles.css'; ?>">
         <?php
         echo '</div>';
