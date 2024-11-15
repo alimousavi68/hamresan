@@ -670,12 +670,21 @@ function add_hamresan_post_metabbox()
 }
 function i8_hrm_render_hamresan_metabox($post)
 {
+    $post_status = get_post_status($post->ID);
+
+    // بررسی وضعیت و نمایش پیام مناسب
+    if ($post_status === 'publish') {
+       $is_publish = true;
+    } else {
+        $is_publish = false;
+    }
+
     ?>
     <div class="">
         <div>ارسال به : </div>
         <div class="widefat">
             <label>
-                <input type="radio" name="i8_hrm_manual_setting" id="i8_hrm_manual_setting" value="auto" checked
+                <input type="radio" name="i8_hrm_manual_setting" id="i8_hrm_manual_setting" value="auto" <?php echo ($is_publish == false) ? ' checked ' : ''; ?>
                     onchange="toggleSelect()">
                 پیش‌فرض
             </label>
@@ -685,7 +694,7 @@ function i8_hrm_render_hamresan_metabox($post)
                 دستی
             </label>
             <label>
-                <input type="radio" name="i8_hrm_manual_setting" id="i8_hrm_manual_setting" value="off"
+                <input type="radio" name="i8_hrm_manual_setting" id="i8_hrm_manual_setting" value="off" <?php echo ($is_publish == true) ? ' checked ' : ''; ?>
                     onchange="toggleSelect()">
                 عدم ارسال
             </label>
