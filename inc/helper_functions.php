@@ -6,10 +6,10 @@ add_action('wp_ajax_nopriv_i8_hrm_test_connection', 'i8_hrm_test_connection'); /
 add_action('wp_ajax_i8_hrm_fetch_categories', 'i8_hrm_fetch_categories');
 add_action('wp_ajax_nopriv_i8_hrm_fetch_categories', 'i8_hrm_fetch_categories');
 
-add_action('wp_ajax_i8_hrm_delete_all_reports' , 'i8_hrm_delete_all_reports');
+add_action('wp_ajax_i8_hrm_delete_all_reports', 'i8_hrm_delete_all_reports');
 add_action('wp_ajax_nopriv_i8_hrm_delete_all_reports', 'i8_hrm_delete_all_reports');
 
-add_action('wp_ajax_i8_hrm_get_all_reports' , 'i8_hrm_get_all_reports');
+add_action('wp_ajax_i8_hrm_get_all_reports', 'i8_hrm_get_all_reports');
 add_action('wp_ajax_nopriv_i8_hrm_get_all_reports', 'i8_hrm_get_all_reports');
 
 
@@ -28,6 +28,12 @@ function send_new_post_to_child_sites($post_id)
         return;
     }
 
+    //عدم ارسال
+    if (isset($_POST['i8_hrm_manual_setting']) && $_POST['i8_hrm_manual_setting'] == 'off') {
+        return;
+    }
+
+    // ارسال در حالت دستی
     if (isset($_POST['i8_hrm_manual_setting']) && $_POST['i8_hrm_manual_setting'] == 'manual') {
         $i8_hrm_body_fetch = $_POST['i8_hrm_child_site_for_send'];
         $child_sites = get_posts(
@@ -78,9 +84,20 @@ function send_new_post_to_child_sites($post_id)
 
         // ارسال درخواست برای ایجاد پست
         $post_info = i8_hrm_fetch_post_info($post, $child_site_meta, $jwt_token, $url);
+        // error_log('post_info: ' . print_r($post_info,true));
         $response = send_rest_post_insert_request($url, $username, $password, $post_info);
 
         $response_id = json_decode(wp_remote_retrieve_body($response));
+        if ($child_site_meta['i8_hrm_postmeta_fetch'] == 'on') {
+            $post_meta = get_post_meta($post->ID);
+
+            $meta_data = array();
+            foreach ($post_meta as $key => $values) {
+                $meta_data[$key] = $values[0];
+            }
+            $post_info['meta_input'] = $meta_data;
+        }
+
         // بررسی موفقیت‌آمیز بودن درخواست
         if ($response && isset($response_id->id)) {
             insert_into_hrm_reports(date('Y-m-d H:i:s'), $post_id, $child_site->ID, 1, '');
@@ -211,6 +228,7 @@ function i8_hrm_fetch_post_info($post, $child_site_meta, $token, $url)
         }
     }
 
+
     if ($child_site_meta['i8_hrm_publish_delay']) {
         // فرض کنید $post و $child_site_meta به درستی تعریف شده‌اند
         $publish_delay = isset($child_site_meta['i8_hrm_publish_delay']) ? $child_site_meta['i8_hrm_publish_delay'] : 0;
@@ -223,6 +241,7 @@ function i8_hrm_fetch_post_info($post, $child_site_meta, $token, $url)
         // ذخیره تاریخ نهایی در فرمت ISO 8601
         $post_info['date'] = $post_date->format('c'); // فرمت ISO 8601
     }
+
 
     // error_log(print_r($post_info, true));
     return $post_info;
@@ -665,6 +684,11 @@ function i8_hrm_render_hamresan_metabox($post)
                     onchange="toggleSelect()">
                 دستی
             </label>
+            <label>
+                <input type="radio" name="i8_hrm_manual_setting" id="i8_hrm_manual_setting" value="off"
+                    onchange="toggleSelect()">
+                عدم ارسال
+            </label>
             <br>
         </div>
         <div class="widefat">
@@ -683,20 +707,46 @@ function i8_hrm_render_hamresan_metabox($post)
             </select>
         </div>
     </div>
+
     <script>
         function toggleSelect() {
-            const autoRadio = document.getElementById('i8_hrm_manual_setting');
+            const radios = document.getElementsByName('i8_hrm_manual_setting');
             const selectElement = document.getElementById('i8_hrm_child_site_for_send');
+            let selectedValue = null;
+
+            // پیدا کردن رادیو باتن انتخاب شده
+            for (let radio of radios) {
+                if (radio.checked) {
+                    selectedValue = radio.value;
+                    break; // اگر رادیو باتن انتخاب شده پیدا شد، از حلقه خارج می‌شویم
+                }
+            }
 
             // بررسی وضعیت رادیو باتن‌ها و تنظیم وضعیت select
-            if (autoRadio.checked) {
+            if (selectedValue === 'auto') {
                 // اگر حالت پیش‌فرض انتخاب شده باشد
                 selectElement.disabled = true; // غیرفعال کردن select
                 selectElement.classList.add('disabled'); // اضافه کردن کلاس غیرفعال (اختیاری)
-            } else {
+                // انتخاب همه گزینه‌ها
+                for (let option of selectElement.options) {
+                    option.selected = true;
+                }
+            } else if (selectedValue === 'manual') {
                 // اگر حالت دستی انتخاب شده باشد
                 selectElement.disabled = false; // فعال کردن select
                 selectElement.classList.remove('disabled'); // حذف کلاس غیرفعال (اختیاری)
+                // عدم انتخاب هیچ گزینه‌ای
+                for (let option of selectElement.options) {
+                    option.selected = false;
+                }
+            } else if (selectedValue === 'off') {
+                // اگر حالت عدم ارسال انتخاب شده باشد
+                selectElement.disabled = true; // غیرفعال کردن select
+                selectElement.classList.add('disabled'); // اضافه کردن کلاس غیرفعال (اختیاری)
+                // عدم انتخاب هیچ گزینه‌ای
+                for (let option of selectElement.options) {
+                    option.selected = false;
+                }
             }
         }
 
