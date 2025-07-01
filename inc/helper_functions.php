@@ -218,7 +218,9 @@ function i8_hrm_fetch_post_info($post, $child_site_meta, $token, $url)
         if (has_post_thumbnail($post->ID)) {
             $post_media_url = get_the_post_thumbnail_url($post->ID);
             $media_id = upload_media($token, $post_media_url, $url);
-            $post_info['featured_media'] = $media_id;
+            if ($media_id !== null) {
+                $post_info['featured_media'] = $media_id;
+            }
         }
     }
 
