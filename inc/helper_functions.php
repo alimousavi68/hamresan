@@ -457,7 +457,8 @@ function i8_hrm_fetch_categories($url = '', $username = '', $password = '')
         'headers' => array(
             'Authorization' => 'Bearer ' . $token,
             'content-type' => 'application/json'
-        )
+        ),
+        'timeout' => 30 // Increase timeout to 30 seconds
     );
 
     $response = wp_remote_get($url, $args);

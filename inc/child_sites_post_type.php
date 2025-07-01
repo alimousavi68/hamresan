@@ -93,6 +93,7 @@ function display_hrm_setting_metabox_callback($post)
     $i8_hrm_rankmath_fetch = get_post_meta($post_id, 'i8_hrm_rankmath_fetch', true) ? get_post_meta($post_id, 'i8_hrm_rankmath_fetch', true) : '';
     $i8_hrm_limit_sent_post_in_day = get_post_meta($post_id, 'i8_hrm_limit_sent_post_in_day', true) ? get_post_meta($post_id, 'i8_hrm_limit_sent_post_in_day', true) : '';
 
+    $child_site_categories = []; // Initialize as empty array
     if ($i8_hrm_url_path != '') {
         $response = i8_hrm_fetch_categories_return($i8_hrm_url_path, $i8_hrm_child_site_username, $i8_hrm_child_site_password);
         if ($response['success'] == true) {
