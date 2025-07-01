@@ -15,6 +15,7 @@ add_action('wp_ajax_nopriv_i8_hrm_get_all_reports', 'i8_hrm_get_all_reports');
 
 add_action('save_post', 'send_new_post_to_child_sites', 100);
 
+
 // Send Post Post Publishe Action Function
 function send_new_post_to_child_sites($post_id)
 {
@@ -170,6 +171,7 @@ function i8_hrm_fetch_child_sites_meta($child_site_id)
     );
     return $i8_hrm_child_site_meta;
 }
+
 
 // prepare and send post to child site
 function i8_hrm_fetch_post_info($post, $child_site_meta, $token, $url)
@@ -367,6 +369,10 @@ function manage_tags($jwt_token, $tags_list, $wp_api_url)
 function upload_media($jwt_token, $image_file_path, $wp_api_url)
 {
     $image_data = file_get_contents($image_file_path);
+    if ($image_data === false || !is_string($image_data)) {
+        error_log('Failed to get image contents from: ' . $image_file_path);
+        return null;
+    }
     $image_filename = basename($image_file_path);
 
     $response = wp_remote_post($wp_api_url . '/wp-json/wp/v2/media', array(
