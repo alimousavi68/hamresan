@@ -76,7 +76,8 @@ function display_hrm_setting_metabox_callback($post)
     $i8_hrm_url_path = get_post_meta($post_id, 'i8_hrm_url_path', true) ? get_post_meta($post_id, 'i8_hrm_url_path', true) : '';
     $i8_hrm_child_site_username = get_post_meta($post_id, 'i8_hrm_child_site_username', true) ? get_post_meta($post_id, 'i8_hrm_child_site_username', true) : '';
     $i8_hrm_child_site_password = get_post_meta($post_id, 'i8_hrm_child_site_password', true) ? get_post_meta($post_id, 'i8_hrm_child_site_password', true) : '';
-    $i8_hrm_publish_delay = get_post_meta($post_id, 'i8_hrm_publish_delay', true) ? get_post_meta($post_id, 'i8_hrm_publish_delay', true) : 5;
+    $stored_delay = get_post_meta($post_id, 'i8_hrm_publish_delay', true);
+    $i8_hrm_publish_delay = ($stored_delay === false || $stored_delay === '') ? 0 : $stored_delay;
     $i8_hrm_post_status = get_post_meta($post_id, 'i8_hrm_post_status', true) ? get_post_meta($post_id, 'i8_hrm_post_status', true) : 'daft';
     $i8_hrm_title_fetch = get_post_meta($post_id, 'i8_hrm_title_fetch', true) ? get_post_meta($post_id, 'i8_hrm_title_fetch', true) : '';
     $i8_hrm_excerpt_fetch = get_post_meta($post_id, 'i8_hrm_excerpt_fetch', true) ? get_post_meta($post_id, 'i8_hrm_excerpt_fetch', true) : '';
@@ -553,6 +554,7 @@ function save_i8_hrm_child_site_settings_meta_box($post_id)
 
     // publish_delay
     if (isset($_POST['i8_hrm_publish_delay'])) {
+        
         update_post_meta($post_id, 'i8_hrm_publish_delay', sanitize_text_field($_POST['i8_hrm_publish_delay']));
     }
 

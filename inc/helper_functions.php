@@ -12,7 +12,6 @@ add_action('wp_ajax_nopriv_i8_hrm_delete_all_reports', 'i8_hrm_delete_all_report
 add_action('wp_ajax_i8_hrm_get_all_reports', 'i8_hrm_get_all_reports');
 add_action('wp_ajax_nopriv_i8_hrm_get_all_reports', 'i8_hrm_get_all_reports');
 
-
 add_action('save_post', 'send_new_post_to_child_sites', 100);
 
 
@@ -55,8 +54,11 @@ function send_new_post_to_child_sites($post_id)
 
     // ارسال پست به هر سایت فرزند
     foreach ($child_sites as $child_site) {
+        $is_break = false;
+
 
         $i8_hrm_forbbiden_cats = get_post_meta($child_site->ID, 'i8_hrm_forbbiden_cats', true);
+
         if (isset($i8_hrm_forbbiden_cats) && !empty($i8_hrm_forbbiden_cats)) {
             $post_categories = wp_get_post_terms($post_id, 'category');
             foreach ($post_categories as $category) {
@@ -66,15 +68,15 @@ function send_new_post_to_child_sites($post_id)
             }
         }
 
-        if (isset($is_break)) {
+        if (isset($is_break) && $is_break == true) {
             insert_into_hrm_reports(date('Y-m-d H:i:s'), $post_id, $child_site->ID, 0, 'دسته بندی این پست در لیست سایت فرزند مورد نظر محدود شده است');
-            break;
+            continue;
         }
 
         $child_site_id = $child_site->ID;
         if (i8_child_site_is_limit_post_in_day($child_site_id) == false) {
             insert_into_hrm_reports(date('Y-m-d H:i:s'), $post_id, $child_site->ID, 0, 'حداکثر تعداد پست های ارسال شده در یک روز برای این سایت فرزند سررسیده است');
-            break;
+            continue;
         }
 
         $child_site_meta = i8_hrm_fetch_child_sites_meta($child_site_id);
@@ -211,6 +213,7 @@ function i8_hrm_fetch_post_info($post, $child_site_meta, $token, $url)
         $category_relationships = $child_site_meta['category_relationships'];
         $category_list = i8_hrm_convert_category($categories, $category_relationships);
         $post_info['categories'] = $category_list;
+        error_log('cat: '. print_r($post_info['categories']));
     }
 
     if ($child_site_meta['i8_hrm_thumbnail_fetch'] == 'on') {
@@ -276,9 +279,12 @@ function send_rest_post_insert_request($url, $username, $password, $post_info)
     if (is_wp_error($response)) {
         // در صورت خطا بررسی کنید
         error_log('خطا در ارسال درخواست: ' . $response->get_error_message());
+        
     } else {
-        return $response;
         // error_log('success send for: ' . $url);
+        // error_log('succes response: ' . print_r($response,true));
+        
+        return $response;
     }
 }
 
