@@ -11,6 +11,8 @@ add_action('wp_ajax_nopriv_i8_hrm_delete_all_reports', 'i8_hrm_delete_all_report
 
 add_action('wp_ajax_i8_hrm_get_all_reports', 'i8_hrm_get_all_reports');
 add_action('wp_ajax_nopriv_i8_hrm_get_all_reports', 'i8_hrm_get_all_reports');
+add_action('wp_ajax_i8_hrm_fetch_post_types', 'i8_hrm_fetch_post_types');
+add_action('wp_ajax_nopriv_i8_hrm_fetch_post_types', 'i8_hrm_fetch_post_types');
 
 add_action('save_post', 'send_new_post_to_child_sites', 100);
 
@@ -88,12 +90,12 @@ function send_new_post_to_child_sites($post_id)
         // ارسال درخواست برای ایجاد پست
         $post_info = i8_hrm_fetch_post_info($post, $child_site_meta, $jwt_token, $url);
         // error_log('post_info: ' . print_r($post_info,true));
-        $response = send_rest_post_insert_request($url, $username, $password, $post_info);
+        $rest_base = isset($child_site_meta['i8_hrm_destination_post_type_base']) && $child_site_meta['i8_hrm_destination_post_type_base'] ? $child_site_meta['i8_hrm_destination_post_type_base'] : 'posts';
+        $response = send_rest_post_insert_request($url, $username, $password, $post_info, $rest_base);
 
         $response_id = json_decode(wp_remote_retrieve_body($response));
         if ($child_site_meta['i8_hrm_postmeta_fetch'] == 'on') {
             $post_meta = get_post_meta($post->ID);
-
             $meta_data = array();
             foreach ($post_meta as $key => $values) {
                 $meta_data[$key] = $values[0];
@@ -106,7 +108,19 @@ function send_new_post_to_child_sites($post_id)
             insert_into_hrm_reports(date('Y-m-d H:i:s'), $post_id, $child_site->ID, 1, '');
             // اضافه کردن تمام متادیتاهای پست
             if ($child_site_meta['i8_hrm_postmeta_fetch'] == 'on') {
-                $meta_response = send_rest_post_meta_request($url, $response_id->id, $post_id, $jwt_token);
+                $meta_response = send_rest_post_meta_request($url, $response_id->id, $post_id, $jwt_token, $rest_base, $child_site->ID);
+            }
+            if (isset($child_site_meta['i8_hrm_source_meta_enabled']) && $child_site_meta['i8_hrm_source_meta_enabled'] === 'on') {
+                $name_key = isset($child_site_meta['i8_hrm_source_name_meta_key']) ? $child_site_meta['i8_hrm_source_name_meta_key'] : '';
+                $link_key = isset($child_site_meta['i8_hrm_source_link_meta_key']) ? $child_site_meta['i8_hrm_source_link_meta_key'] : '';
+                $name_override = isset($child_site_meta['i8_hrm_source_name_override']) ? $child_site_meta['i8_hrm_source_name_override'] : '';
+                if ($name_key || $link_key) {
+                    send_rest_source_meta_request($url, $response_id->id, $post_id, $jwt_token, $name_key, $link_key, $name_override, $rest_base, $child_site->ID);
+                }
+            }
+            $media_id_payload = isset($post_info['featured_media']) ? $post_info['featured_media'] : null;
+            if ($media_id_payload) {
+                attach_media_to_post($url, $jwt_token, $response_id->id, $media_id_payload, $rest_base, $post_id, $child_site->ID);
             }
         }
     }
@@ -150,6 +164,12 @@ function i8_hrm_fetch_child_sites_meta($child_site_id)
     $i8_hrm_replace_with_2 = get_post_meta($child_site_id, 'i8_hrm_replace_with_2', true) ? get_post_meta($child_site_id, 'i8_hrm_replace_with_2', true) : '';
     $category_relationships = get_post_meta($child_site_id, 'category_relationships', true) ? get_post_meta($child_site_id, 'category_relationships', true) : '';
 
+    $i8_hrm_source_meta_enabled = get_post_meta($child_site_id, 'i8_hrm_source_meta_enabled', true) ? get_post_meta($child_site_id, 'i8_hrm_source_meta_enabled', true) : 'off';
+    $i8_hrm_source_name_meta_key = get_post_meta($child_site_id, 'i8_hrm_source_name_meta_key', true) ? get_post_meta($child_site_id, 'i8_hrm_source_name_meta_key', true) : '';
+    $i8_hrm_source_link_meta_key = get_post_meta($child_site_id, 'i8_hrm_source_link_meta_key', true) ? get_post_meta($child_site_id, 'i8_hrm_source_link_meta_key', true) : '';
+    $i8_hrm_source_name_override = get_post_meta($child_site_id, 'i8_hrm_source_name_override', true) ? get_post_meta($child_site_id, 'i8_hrm_source_name_override', true) : '';
+    $i8_hrm_destination_post_type_base = get_post_meta($child_site_id, 'i8_hrm_destination_post_type_base', true) ? get_post_meta($child_site_id, 'i8_hrm_destination_post_type_base', true) : 'posts';
+
     $i8_hrm_child_site_meta = array(
         'i8_hrm_url_path' => $i8_hrm_url_path,
         'i8_hrm_child_site_username' => $i8_hrm_child_site_username,
@@ -169,7 +189,12 @@ function i8_hrm_fetch_child_sites_meta($child_site_id)
         'i8_hrm_replace_with_1' => $i8_hrm_replace_with_1,
         'i8_hrm_replace_target_2' => $i8_hrm_replace_target_2,
         'i8_hrm_replace_with_2' => $i8_hrm_replace_with_2,
-        'category_relationships' => $category_relationships
+        'category_relationships' => $category_relationships,
+        'i8_hrm_source_meta_enabled' => $i8_hrm_source_meta_enabled,
+        'i8_hrm_source_name_meta_key' => $i8_hrm_source_name_meta_key,
+        'i8_hrm_source_link_meta_key' => $i8_hrm_source_link_meta_key,
+        'i8_hrm_source_name_override' => $i8_hrm_source_name_override,
+        'i8_hrm_destination_post_type_base' => $i8_hrm_destination_post_type_base
     );
     return $i8_hrm_child_site_meta;
 }
@@ -257,13 +282,13 @@ function i8_hrm_fetch_post_info($post, $child_site_meta, $token, $url)
 
 // set activity log
 
-function send_rest_post_insert_request($url, $username, $password, $post_info)
+function send_rest_post_insert_request($url, $username, $password, $post_info, $rest_base = 'posts')
 {
     // get and generate jwt token in child site
     $jwt_token = get_jwt_token($url, $username, $password); // این تابع باید توکن JWT را برگرداند
 
     // URL REST API سایت فرزند
-    $url = $url . '/wp-json/wp/v2/posts';
+    $url = $url . '/wp-json/wp/v2/' . $rest_base;
 
     // ارسال درخواست به سایت فرزند با JWT
     $response = wp_remote_post($url, array(
@@ -382,17 +407,37 @@ function upload_media($jwt_token, $image_file_path, $wp_api_url)
         return null;
     }
     $image_filename = basename($image_file_path);
+    $ext = strtolower(pathinfo($image_filename, PATHINFO_EXTENSION));
+    $mime = 'application/octet-stream';
+    if ($ext === 'jpg' || $ext === 'jpeg') {
+        $mime = 'image/jpeg';
+    } elseif ($ext === 'png') {
+        $mime = 'image/png';
+    } elseif ($ext === 'gif') {
+        $mime = 'image/gif';
+    } elseif ($ext === 'webp') {
+        $mime = 'image/webp';
+    } elseif ($ext === 'svg') {
+        $mime = 'image/svg+xml';
+    }
 
     $response = wp_remote_post($wp_api_url . '/wp-json/wp/v2/media', array(
         'headers' => array(
             'Authorization' => 'Bearer ' . $jwt_token,
-            'Content-Disposition' => 'attachment; filename=' . $image_filename
+            'Content-Disposition' => 'attachment; filename=' . $image_filename,
+            'Content-Type' => $mime
         ),
         'body' => $image_data
     ));
 
     if (is_wp_error($response)) {
         error_log('Error uploading media: ' . $response->get_error_message());
+        return null;
+    }
+
+    $code = wp_remote_retrieve_response_code($response);
+    if (!in_array($code, array(200, 201))) {
+        error_log('Unexpected response on media upload: ' . $code . ' - ' . wp_remote_retrieve_body($response));
         return null;
     }
 
@@ -403,6 +448,76 @@ function upload_media($jwt_token, $image_file_path, $wp_api_url)
     }
 
     return null;
+}
+
+function attach_media_to_post($url, $jwt_token, $post_id, $media_id, $rest_base = 'posts', $server_post_id = null, $child_site_id = null)
+{
+    if (!$media_id || !$post_id) {
+        return false;
+    }
+    $media_url = "{$url}/wp-json/wp/v2/media/{$media_id}";
+    $response1 = wp_remote_post($media_url, array(
+        'method' => 'POST',
+        'headers' => array(
+            'Authorization' => 'Bearer ' . $jwt_token,
+            'Content-Type' => 'application/json',
+        ),
+        'body' => json_encode(array('post' => $post_id)),
+    ));
+    if (is_wp_error($response1)) {
+        if ($server_post_id && $child_site_id) {
+            insert_into_hrm_reports(date('Y-m-d H:i:s'), $server_post_id, $child_site_id, 0, 'پیوست تصویر ناموفق: ' . $response1->get_error_message());
+        }
+        return false;
+    }
+    $code1 = wp_remote_retrieve_response_code($response1);
+    if (!in_array($code1, array(200, 201))) {
+        if ($server_post_id && $child_site_id) {
+            insert_into_hrm_reports(date('Y-m-d H:i:s'), $server_post_id, $child_site_id, 0, 'پیوست تصویر ناموفق: کد ' . $code1 . ' - ' . wp_remote_retrieve_body($response1));
+        }
+        return false;
+    }
+    $post_url = "{$url}/wp-json/wp/v2/{$rest_base}/{$post_id}";
+    $response2 = wp_remote_post($post_url, array(
+        'method' => 'POST',
+        'headers' => array(
+            'Authorization' => 'Bearer ' . $jwt_token,
+            'Content-Type' => 'application/json',
+        ),
+        'body' => json_encode(array('featured_media' => $media_id)),
+    ));
+    if (is_wp_error($response2)) {
+        if ($server_post_id && $child_site_id) {
+            insert_into_hrm_reports(date('Y-m-d H:i:s'), $server_post_id, $child_site_id, 0, 'ثبت تصویر شاخص ناموفق: ' . $response2->get_error_message());
+        }
+        return false;
+    }
+    $code2 = wp_remote_retrieve_response_code($response2);
+    if (!in_array($code2, array(200, 201))) {
+        if ($server_post_id && $child_site_id) {
+            insert_into_hrm_reports(date('Y-m-d H:i:s'), $server_post_id, $child_site_id, 0, 'ثبت تصویر شاخص ناموفق: کد ' . $code2 . ' - ' . wp_remote_retrieve_body($response2));
+        }
+        return false;
+    }
+    $verify = wp_remote_get($post_url, array(
+        'headers' => array(
+            'Authorization' => 'Bearer ' . $jwt_token
+        )
+    ));
+    if (is_wp_error($verify)) {
+        if ($server_post_id && $child_site_id) {
+            insert_into_hrm_reports(date('Y-m-d H:i:s'), $server_post_id, $child_site_id, 0, 'بررسی تصویر شاخص ناموفق: ' . $verify->get_error_message());
+        }
+        return false;
+    }
+    $post_obj = json_decode(wp_remote_retrieve_body($verify), true);
+    if (!isset($post_obj['featured_media']) || intval($post_obj['featured_media']) !== intval($media_id)) {
+        if ($server_post_id && $child_site_id) {
+            insert_into_hrm_reports(date('Y-m-d H:i:s'), $server_post_id, $child_site_id, 0, 'پس از بروزرسانی، تصویر شاخص تنظیم نشد');
+        }
+        return false;
+    }
+    return true;
 }
 
 function i8_hrm_convert_category($categories, $category_relationships)
@@ -499,6 +614,31 @@ function i8_hrm_fetch_categories($url = '', $username = '', $password = '')
     wp_send_json($response); // equal return
 }
 
+function i8_hrm_fetch_post_types($url = '', $username = '', $password = '')
+{
+    $url = (isset($_POST['i8_hrm_url_path'])) ? $_POST['i8_hrm_url_path'] : $url;
+    $username = (isset($_POST['i8_hrm_child_site_username']) ? $_POST['i8_hrm_child_site_username'] : $username);
+    $password = (isset($_POST['i8_hrm_child_site_password']) ? $_POST['i8_hrm_child_site_password'] : $password);
+    $token = get_jwt_token($url, $username, $password);
+    $endpoint = $url . '/wp-json/wp/v2/types';
+    $args = array(
+        'headers' => array(
+            'Authorization' => 'Bearer ' . $token,
+            'content-type' => 'application/json'
+        ),
+        'timeout' => 30
+    );
+    $response = wp_remote_get($endpoint, $args);
+    if (is_wp_error($response)) {
+        wp_send_json(array('success' => false, 'message' => $response->get_error_message()));
+    }
+    $status_code = wp_remote_retrieve_response_message($response);
+    if ($status_code !== "OK") {
+        wp_send_json(array('success' => false, 'message' => wp_remote_retrieve_body($response)));
+    }
+    $types = json_decode(wp_remote_retrieve_body($response), true);
+    wp_send_json(array('success' => true, 'data' => $types));
+}
 function i8_hrm_fetch_categories_return($url = '', $username = '', $password = '')
 {
     $url = (isset($_POST['i8_hrm_url_path'])) ? $_POST['i8_hrm_url_path'] : $url;
@@ -546,16 +686,13 @@ function i8_hrm_fetch_categories_return($url = '', $username = '', $password = '
 
     return $response;
 }
-function send_rest_post_meta_request($url, $post_id, $server_post_id, $jwt_token)
+function send_rest_post_meta_request($url, $post_id, $server_post_id, $jwt_token, $rest_base = 'posts', $child_site_id = null)
 {
     $meta_data = get_post_meta($server_post_id);
     $filtered_meta_data = array();
 
-    // فیلتر کردن متا داده‌ها
     foreach ($meta_data as $key => $value) {
-        // اگر مقدار متا داده خالی نباشد
         if (!empty($value[0])) {
-            // ذخیره متا داده در فرمت مناسب
             $filtered_meta_data[] = [
                 'key' => $key,
                 'value' => $value[0] // فقط مقدار اول را ذخیره کنید
@@ -563,33 +700,74 @@ function send_rest_post_meta_request($url, $post_id, $server_post_id, $jwt_token
         }
     }
 
-    // بررسی وجود متا داده‌های غیر خالی
     if (!empty($filtered_meta_data)) {
-        $meta_url = "{$url}/wp-json/wp/v2/posts/{$post_id}/meta";
+        $post_url = "{$url}/wp-json/wp/v2/{$rest_base}/{$post_id}";
 
         foreach ($filtered_meta_data as $post_meta) {
-            $response = wp_remote_post($meta_url, [
+            $response = wp_remote_post($post_url, [
                 'method' => 'POST',
                 'headers' => [
                     'Authorization' => 'Bearer ' . $jwt_token,
                     'Content-Type' => 'application/json',
                 ],
-                'body' => json_encode($post_meta), // ارسال متا داده در فرمت مناسب
+                'body' => json_encode(array('meta' => array($post_meta['key'] => $post_meta['value']))),
             ]);
 
             if (is_wp_error($response)) {
+                if ($child_site_id) {
+                    insert_into_hrm_reports(date('Y-m-d H:i:s'), $server_post_id, $child_site_id, 0, 'ارسال متادیتا ناموفق: ' . $response->get_error_message());
+                }
                 return 'Error: ' . $response->get_error_message();
             }
 
             $response_code = wp_remote_retrieve_response_code($response);
-            if ($response_code !== 201) {
+            if (!in_array($response_code, array(200, 201))) {
+                if ($child_site_id) {
+                    insert_into_hrm_reports(date('Y-m-d H:i:s'), $server_post_id, $child_site_id, 0, 'ارسال متادیتا ناموفق: کد ' . $response_code . ' - ' . wp_remote_retrieve_body($response));
+                }
                 return 'Error: Received response code ' . $response_code;
             }
         }
 
-        return 'All meta data added successfully.'; // پیام موفقیت
+        return 'All meta data added successfully.';
     } else {
-        return 'No meta data to send.'; // پیام واضح در صورت عدم وجود متا داده
+        return 'No meta data to send.';
+    }
+}
+
+function send_rest_source_meta_request($url, $post_id, $server_post_id, $jwt_token, $name_key, $link_key, $name_override = '', $rest_base = 'posts', $child_site_id = null)
+{
+    $post_url = "{$url}/wp-json/wp/v2/{$rest_base}/{$post_id}";
+    $source_url = get_permalink($server_post_id);
+    $source_site_name = $name_override ? $name_override : get_bloginfo('name');
+    $payload = array('meta' => array());
+    if (!empty($name_key) && !empty($source_site_name)) {
+        $payload['meta'][$name_key] = $source_site_name;
+    }
+    if (!empty($link_key) && !empty($source_url)) {
+        $payload['meta'][$link_key] = $source_url;
+    }
+    if (!empty($payload['meta'])) {
+        $response = wp_remote_post($post_url, array(
+            'method' => 'POST',
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $jwt_token,
+                'Content-Type' => 'application/json',
+            ),
+            'body' => json_encode($payload),
+        ));
+        if (is_wp_error($response)) {
+            if ($child_site_id) {
+                insert_into_hrm_reports(date('Y-m-d H:i:s'), $server_post_id, $child_site_id, 0, 'ارسال متای منبع ناموفق: ' . $response->get_error_message());
+            }
+        } else {
+            $response_code = wp_remote_retrieve_response_code($response);
+            if (!in_array($response_code, array(200, 201))) {
+                if ($child_site_id) {
+                    insert_into_hrm_reports(date('Y-m-d H:i:s'), $server_post_id, $child_site_id, 0, 'ارسال متای منبع ناموفق: کد ' . $response_code . ' - ' . wp_remote_retrieve_body($response));
+                }
+            }
+        }
     }
 }
 

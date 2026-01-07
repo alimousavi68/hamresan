@@ -93,6 +93,11 @@ function display_hrm_setting_metabox_callback($post)
     $i8_hrm_yoast_fetch = get_post_meta($post_id, 'i8_hrm_yoast_fetch', true) ? get_post_meta($post_id, 'i8_hrm_yoast_fetch', true) : '';
     $i8_hrm_rankmath_fetch = get_post_meta($post_id, 'i8_hrm_rankmath_fetch', true) ? get_post_meta($post_id, 'i8_hrm_rankmath_fetch', true) : '';
     $i8_hrm_limit_sent_post_in_day = get_post_meta($post_id, 'i8_hrm_limit_sent_post_in_day', true) ? get_post_meta($post_id, 'i8_hrm_limit_sent_post_in_day', true) : '';
+    $i8_hrm_source_meta_enabled = get_post_meta($post_id, 'i8_hrm_source_meta_enabled', true) ? get_post_meta($post_id, 'i8_hrm_source_meta_enabled', true) : 'off';
+    $i8_hrm_source_name_meta_key = get_post_meta($post_id, 'i8_hrm_source_name_meta_key', true) ? get_post_meta($post_id, 'i8_hrm_source_name_meta_key', true) : '';
+    $i8_hrm_source_link_meta_key = get_post_meta($post_id, 'i8_hrm_source_link_meta_key', true) ? get_post_meta($post_id, 'i8_hrm_source_link_meta_key', true) : '';
+    $i8_hrm_source_name_override = get_post_meta($post_id, 'i8_hrm_source_name_override', true) ? get_post_meta($post_id, 'i8_hrm_source_name_override', true) : '';
+    $i8_hrm_destination_post_type_base = get_post_meta($post_id, 'i8_hrm_destination_post_type_base', true) ? get_post_meta($post_id, 'i8_hrm_destination_post_type_base', true) : 'posts';
 
     $child_site_categories = []; // Initialize as empty array
     if ($i8_hrm_url_path != '') {
@@ -359,6 +364,43 @@ function display_hrm_setting_metabox_callback($post)
 
         </div>
 
+        <div class="flex w-full flex-col">
+            <div class="divider divider-secondary label-text text-right  text-sm text-slate-800 ">ثبت متای منبع در مقصد :</div>
+            <div class="grid grid-cols-2 gap-4">
+                <label class="">
+                    <input type="checkbox" name="i8_hrm_source_meta_enabled" <?php echo ($i8_hrm_source_meta_enabled == 'on') ? ' checked="checked" ' : '' ?> />
+                    فعال‌سازی ثبت متای منبع
+                </label>
+                <div></div>
+                <div class="flex flex-col">
+                    <label>کلید متای نام منبع در مقصد</label>
+                    <input type="text" class="input" name="i8_hrm_source_name_meta_key" value="<?php echo esc_attr($i8_hrm_source_name_meta_key); ?>">
+                </div>
+                <div class="flex flex-col">
+                    <label>کلید متای لینک پست مبدا در مقصد</label>
+                    <input type="text" class="input" name="i8_hrm_source_link_meta_key" value="<?php echo esc_attr($i8_hrm_source_link_meta_key); ?>">
+                </div>
+                <div class="flex flex-col">
+                    <label>نام سفارشی منبع</label>
+                    <input type="text" class="input" name="i8_hrm_source_name_override" value="<?php echo esc_attr($i8_hrm_source_name_override); ?>">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex w-full flex-col">
+            <div class="divider divider-secondary label-text text-right  text-sm text-slate-800 ">پست‌تایپ مقصد :</div>
+            <div class="flex items-center gap-3">
+                <select name="i8_hrm_destination_post_type_base" id="i8_hrm_destination_post_type_base" class="select select-bordered">
+                    <option value="<?php echo esc_attr($i8_hrm_destination_post_type_base); ?>" selected><?php echo esc_html($i8_hrm_destination_post_type_base); ?></option>
+                </select>
+                <button class="btn btn-sm" id="fetch_post_types">
+                    <span id="i8-loading-bar-3" class="loading loading-spinner loading-sm hidden"></span>
+                    واکشی پست‌تایپ‌ها
+                </button>
+            </div>
+            <div id="notif-span-3"></div>
+        </div>
+
     </div>
 
     <!-- test button scripts -->
@@ -489,6 +531,48 @@ function display_hrm_setting_metabox_callback($post)
         });
 
     
+    </script>
+    <script>
+        jQuery(document).ready(function ($) {
+            $('#fetch_post_types').click(function (e) {
+                e.preventDefault();
+                $("#i8-loading-bar-3").removeClass("hidden");
+                var i8_hrm_url_path = $('#i8_hrm_url_path').val();
+                var i8_hrm_child_site_username = $('#i8_hrm_child_site_username').val();
+                var i8_hrm_child_site_password = $('#i8_hrm_child_site_password').val();
+                var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+                $.ajax({
+                    type: 'POST',
+                    url: ajaxurl,
+                    data: {
+                        'action': 'i8_hrm_fetch_post_types',
+                        'i8_hrm_url_path': i8_hrm_url_path,
+                        'i8_hrm_child_site_username': i8_hrm_child_site_username,
+                        'i8_hrm_child_site_password': i8_hrm_child_site_password,
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            var types = response.data;
+                            var select = $('#i8_hrm_destination_post_type_base');
+                            select.empty();
+                            $.each(types, function (key, t) {
+                                var base = t.rest_base || key;
+                                select.append(`<option value="${base}">${base}</option>`);
+                            });
+                            $('#notif-span-3').append('<div class="toast toast-end"><div class="alert alert-success"><span>پست‌تایپ‌ها واکشی شد!</span></div></div>');
+                        } else {
+                            $('#notif-span-3').append('<div class="toast toast-end"><div class="alert alert-danger"><span>مشکلی پیش آمد!</span></div></div>');
+                        }
+                    },
+                    error: function () {
+                        $('#notif-span-3').append('<div class="toast toast-end"><div class="alert alert-danger"><span>خطا در واکشی پست‌تایپ‌ها</span></div></div>');
+                    }
+                }).always(function () {
+                    $("#i8-loading-bar-3").addClass("hidden");
+                    setTimeout(function () { $(".alert").remove(); }, 7000);
+                });
+            });
+        });
     </script>
 
     <link rel="stylesheet" href="<?php echo HAM_PLUGIN_URL . '/assets/css/styles.css'; ?>">
@@ -642,6 +726,24 @@ function save_i8_hrm_child_site_settings_meta_box($post_id)
     });
 
     update_post_meta($post_id, 'category_relationships', $cleaned_relations);
+
+    if (isset($_POST['i8_hrm_source_meta_enabled'])) {
+        update_post_meta($post_id, 'i8_hrm_source_meta_enabled', sanitize_text_field($_POST['i8_hrm_source_meta_enabled']));
+    } else {
+        update_post_meta($post_id, 'i8_hrm_source_meta_enabled', 'off');
+    }
+    if (isset($_POST['i8_hrm_source_name_meta_key'])) {
+        update_post_meta($post_id, 'i8_hrm_source_name_meta_key', sanitize_text_field($_POST['i8_hrm_source_name_meta_key']));
+    }
+    if (isset($_POST['i8_hrm_source_link_meta_key'])) {
+        update_post_meta($post_id, 'i8_hrm_source_link_meta_key', sanitize_text_field($_POST['i8_hrm_source_link_meta_key']));
+    }
+    if (isset($_POST['i8_hrm_source_name_override'])) {
+        update_post_meta($post_id, 'i8_hrm_source_name_override', sanitize_text_field($_POST['i8_hrm_source_name_override']));
+    }
+    if (isset($_POST['i8_hrm_destination_post_type_base'])) {
+        update_post_meta($post_id, 'i8_hrm_destination_post_type_base', sanitize_text_field($_POST['i8_hrm_destination_post_type_base']));
+    }
 
 }
 add_action('save_post', 'save_i8_hrm_child_site_settings_meta_box');
