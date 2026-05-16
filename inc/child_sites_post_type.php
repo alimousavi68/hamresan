@@ -28,13 +28,19 @@ function create_post_type_i8_child_sites()
             'show_in_rest' => false,
             'capability_type' => 'i8_child',
             'capabilities' => array(
-                'edit_post' => 'edit_i8_child', // تغییر به 'edit_i8_child_site'
-                'read_post' => 'read_i8_child', // تغییر به 'read_i8_child_site'
-                'delete_post' => 'delete_i8_child', // تغییر به 'delete_i8_child_site'
-                'edit_posts' => 'edit_i8_childs', // تغییر به 'edit_i8_child_sites'
-                'edit_others_posts' => 'edit_others_i8_childs', // تغییر به 'edit_others_i8_child_sites'
-                'publish_posts' => 'publish_i8_childs', // تغییر به 'publish_i8_child_sites'
-                'read_private_posts' => 'read_private_i8_childs', // تغییر به 'read_private_i8_child_sites'
+                'edit_post'          => 'edit_i8_child',
+                'read_post'          => 'read_i8_child',
+                'delete_post'        => 'delete_i8_child',
+                'edit_posts'         => 'edit_i8_childs',
+                'edit_others_posts'  => 'edit_others_i8_childs',
+                'publish_posts'      => 'publish_i8_childs',
+                'read_private_posts' => 'read_private_i8_childs',
+                'delete_posts'           => 'delete_i8_childs',
+                'delete_private_posts'   => 'delete_private_i8_childs',
+                'delete_published_posts' => 'delete_published_i8_childs',
+                'delete_others_posts'    => 'delete_others_i8_childs',
+                'edit_private_posts'     => 'edit_private_i8_childs',
+                'edit_published_posts'   => 'edit_published_i8_childs',
             ),
             'map_meta_cap' => true,
         )
@@ -50,13 +56,25 @@ function add_custom_capabilities()
 
     // اضافه کردن قابلیت‌ها به نقش مدیر کل
     if ($role) {
-        $role->add_cap('edit_i8_child'); // تغییر به 'edit_i8_child_site'
-        $role->add_cap('read_i8_child'); // تغییر به 'read_i8_child_site'
-        $role->add_cap('delete_i8_child'); // تغییر به 'delete_i8_child_site'
-        $role->add_cap('edit_i8_childs'); // تغییر به 'edit_others_i8_child_sites'
-        $role->add_cap('edit_others_i8_childs'); // تغییر به 'edit_others_i8_child_sites'
-        $role->add_cap('publish_i8_childs'); // تغییر به 'publish_i8_child_sites'
-        $role->add_cap('read_private_i8_childs'); // تغییر به 'read_private_i8_child_sites'
+        $caps = array(
+            'edit_i8_child',
+            'read_i8_child',
+            'delete_i8_child',
+            'edit_i8_childs',
+            'edit_others_i8_childs',
+            'publish_i8_childs',
+            'read_private_i8_childs',
+            'delete_i8_childs',
+            'delete_private_i8_childs',
+            'delete_published_i8_childs',
+            'delete_others_i8_childs',
+            'edit_private_i8_childs',
+            'edit_published_i8_childs',
+        );
+
+        foreach ($caps as $cap) {
+            $role->add_cap($cap);
+        }
     }
 }
 
@@ -108,9 +126,8 @@ function display_hrm_setting_metabox_callback($post)
              error_log($response["message"]);
         }
     }
+    wp_nonce_field('save_i8_hrm_child_site_settings', 'i8_hrm_child_site_nonce');
     ?>
-
-
     <div class="flex flex-col gap-3">
         <div id="notif-span">
 
@@ -586,12 +603,24 @@ function display_hrm_setting_metabox_callback($post)
 
 function save_i8_hrm_child_site_settings_meta_box($post_id)
 {
+    // Verify nonce
+    if (!isset($_POST['i8_hrm_child_site_nonce']) || !wp_verify_nonce($_POST['i8_hrm_child_site_nonce'], 'save_i8_hrm_child_site_settings')) {
+        return;
+    }
+
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)
         return;
+
+    // Check permissions
+    if (!current_user_can('edit_post', $post_id)) {
+        return;
+    }
 
     // Save meta values
     // check post type is post
     $post = get_post($post_id);
+    if (!$post) return;
+    
     $post_type = get_post_type($post->ID);
     if ($post_type != 'i8_child_sites') {
         return;
